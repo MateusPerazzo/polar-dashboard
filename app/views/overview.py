@@ -72,6 +72,8 @@ CSS = """
     width: 100%; aspect-ratio: 16 / 9; max-height: 220px; object-fit: cover;
     border-radius: 16px; border: 1px solid var(--border);
 }
+/* Sem o botão de tela cheia que o Streamlit põe nas imagens. */
+.st-key-insight-character [data-testid="stElementToolbar"] { display: none; }
 .character-name { font-family: var(--display); font-weight: 700; color: var(--accent); }
 .character-name span { font-family: inherit; font-weight: 500; color: var(--muted); }
 .character-quote { color: var(--ink-2); font-style: italic; line-height: 1.5; margin: 4px 0 0; }
@@ -275,8 +277,6 @@ with center:
 <div class="insight-title">{insight['headline']}</div>
 <p class="insight-text">{insight['text']}</p>
 {readiness}""")
-            st.page_link("app/views/recovery.py", label="Ver recuperação",
-                         icon=":material/arrow_forward:")
             if insight["character"]:
                 image = RECHARGE_IMAGES / f"{insight['status']}.png"
                 with st.container(key="insight-character"):
