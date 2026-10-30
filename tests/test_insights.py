@@ -29,7 +29,7 @@ class BuildInsightTest(unittest.TestCase):
     def test_each_level_has_its_own_message_and_character(self):
         results = [build_insight(self.sleep, fake_recharge(status)) for status in range(1, 7)]
         self.assertEqual(len({result["headline"] for result in results}), 6)
-        self.assertEqual(results[0]["character"], "Shikamaru")
+        self.assertEqual(results[0]["character"], "Rock Lee")
         self.assertEqual(results[5]["character"], "Goku Super Saiyajin Blue")
 
     def test_missing_status_is_neutral(self):

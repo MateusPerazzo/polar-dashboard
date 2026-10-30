@@ -20,46 +20,46 @@ STAGE_BY_CODE = {0: "Acordado", 1: "REM", 2: "Leve", 3: "Leve", 4: "Profundo"}
 # Os conselhos seguem as dicas do app da Polar para cada nível.
 LEVELS = {
     1: {
-        "headline": "Hoje é dia de deitar e olhar as nuvens.",
+        "headline": "Até a força da juventude precisa de pausa.",
         "summary": "Sua recuperação ficou muito abaixo do normal esta noite.",
         "advice": "Descanse ou faça só um treino bem leve, e tente dormir mais cedo hoje.",
-        "character": "Shikamaru", "mood": "deitado, sem energia",
-        "quote": "Que preguiça... Hoje o plano mais inteligente é não forçar nada.",
+        "character": "Rock Lee", "mood": "completamente exausto",
+        "quote": "O fogo da juventude não se apaga com um dia ruim. Amanhã eu volto em dobro!",
     },
     2: {
-        "headline": "Até a força da juventude precisa de pausa.",
+        "headline": "Até o Espadachim Negro precisa baixar a espada.",
         "summary": "Sua recuperação ficou abaixo do normal esta noite.",
         "advice": "Respeite a necessidade do seu corpo e treine leve. Descansar também vale.",
-        "character": "Rock Lee", "mood": "completamente exausto",
-        "quote": "Nem as mil voltas na vila cabem num dia desses. Recupere primeiro.",
+        "character": "Guts", "mood": "marcado pela batalha, mas de pé",
+        "quote": "Enquanto houver fôlego, eu sigo em frente. Não importa a tempestade: lute!",
     },
     3: {
         "headline": "Cansado, mas sem desistir.",
         "summary": "Sua recuperação ficou um pouco abaixo do normal esta noite.",
         "advice": "Dá para treinar, desde que você ouça o seu corpo e evite exageros.",
         "character": "Asta", "mood": "cansado, mas ainda determinado",
-        "quote": "Não desistir não é ignorar o cansaço: vá em frente, só que no seu ritmo.",
+        "quote": "Não desistir é a minha magia! Vou superar meus limites aqui e agora!",
     },
     4: {
         "headline": "Dia para manter o ritmo.",
         "summary": "Sua recuperação está dentro do normal.",
         "advice": "É um bom dia para treinar. Siga o planejado, sem exageros.",
         "character": "Luffy", "mood": "relaxado e de boa",
-        "quote": "Tudo tranquilo por aqui. Siga a viagem sem pressa e sem pular refeição.",
+        "quote": "Eu sou o homem que vai se tornar o Rei dos Piratas!",
     },
     5: {
         "headline": "Você está pronto para avançar.",
         "summary": "Seu corpo se recuperou bem esta noite.",
         "advice": "Vá com tudo: é um bom dia para aumentar a intensidade.",
-        "character": "Gojo", "mood": "confiante e com disposição",
-        "quote": "Hoje você está no controle. Pode subir o nível do treino.",
+        "character": "Satoru Gojo", "mood": "confiante e com disposição",
+        "quote": "Entre o céu e a terra, sou o mais honrado.",
     },
     6: {
         "headline": "Você está no auge.",
         "summary": "Seu corpo se recuperou muito bem esta noite.",
         "advice": "Hoje é um dia incrível para se exercitar, inclusive para o treino mais forte da semana.",
         "character": "Goku Super Saiyajin Blue", "mood": "no auge",
-        "quote": "Energia no máximo. Se for para buscar um recorde, o dia é hoje.",
+        "quote": "Oi, eu sou o Goku! Hoje dá para ir além do limite. Vamos treinar!",
     },
 }
 # Sem status (a Polar ainda não calculou): mensagens do nível OK, sem personagem.
