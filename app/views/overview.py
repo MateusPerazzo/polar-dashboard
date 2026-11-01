@@ -5,11 +5,19 @@ import streamlit as st
 
 from app import charts, insights, settings, ui
 
-STATE_COLORS = {"good": ui.TONES["good"], "neutral": "#3987e5", "low": ui.TONES["bad"]}
 DELTA_HELP = " A pílula compara com a média dos 7 registros anteriores."
 
 CSS = """
 <style>
+/* Cabeçalho: a saudação ocupa o que sobra (abaixo de 300px, a coluna da direita quebra para
+   baixo); a coluna da direita estica até a altura da saudação, com a barra do topo em cima e
+   o período embaixo, na linha da frase. */
+.st-key-overview-head { align-items: stretch !important; }
+.st-key-overview-head > div:first-child { flex: 1 1 0; min-width: min(100%, 300px); }
+.st-key-overview-side { justify-content: space-between; }
+/* Frase do topo em 1 linha (limite de caracteres em Configurações); "…" só por proteção. */
+.st-key-overview-head .page-subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .chip {
     width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none;
@@ -39,10 +47,23 @@ CSS = """
 /* O link fica invisível: a seta e o cartão já mostram que é clicável. */
 [class*="st-key-card-"] [data-testid="stPageLink"] { height: 0; overflow: hidden; }
 
-.insight-title { font-family: var(--display); font-size: clamp(1.4rem, 2.5vw, 1.75rem); font-weight: 700; line-height: 1.2; margin: 24px 0 12px; }
-.insight-text { color: var(--ink-2); line-height: 1.6; }
+/* Insight do dia: a leitura dos dados vem primeiro; a imagem vem depois, grande, como
+   complemento visual. Cada seção tem altura fixa (título: 1 linha; texto: 4; nome: 1; fala: 2)
+   e os textos têm limite de caracteres em Configurações (insights.TEXT_LIMITS), então nenhuma
+   seção muda de lugar ao trocar de noite. O corte com "…" é só proteção.
+   Ritmo: 16px entre seções (o gap do Streamlit entre blocos + as margens abaixo), 8px dentro. */
+.st-key-insight-head { row-gap: 8px; }
+.insight-title {
+    font-family: var(--display); font-size: 1.4rem; font-weight: 700; line-height: 1.25;
+    height: 1.25em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* line-clamp: corta na 4ª linha com "…". */
+.insight-text {
+    color: var(--ink-2); line-height: 1.6; height: 6.4em; margin: 8px 0 0; overflow: hidden;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4;
+}
 .readiness {
-    display: flex; align-items: center; gap: 16px; margin: 24px 0 8px;
+    display: flex; align-items: center; gap: 16px; margin: 16px 0 0;
     padding: 16px; border-radius: 16px; border: 1px solid var(--border);
 }
 .readiness strong { display: block; }
@@ -62,22 +83,40 @@ CSS = """
 .st-key-insight-prev button:hover, .st-key-insight-next button:hover { color: var(--ink); }
 .st-key-insight-prev button:disabled, .st-key-insight-next button:disabled { opacity: 0.25; }
 
-/* Personagem do status: encostado no fim do cartão, imagem com cantos arredondados. */
-.st-key-insight-character { margin-top: auto; gap: 10px; }
-/* Formato, altura máxima e enquadramento vêm de Configurações (ui.image_vars); os padrões
-   (16:9, 220px, centro) evitam que o insight estique demais os cartões.
-   object-fit: cover corta as bordas em vez de deformar a imagem. */
-.st-key-insight-character img {
-    width: 100%; aspect-ratio: var(--img-ratio, 16 / 9); max-height: var(--img-height, 220px);
-    object-fit: var(--img-fit, cover); object-position: var(--img-position, center);
+/* Personagem do status: depois da avaliação. */
+.st-key-insight-character { gap: 8px; }
+/* Moldura fixa para qualquer imagem (padrão ou recortada em Configurações): formato
+   --image-ratio (3:2, de settings.IMAGE_RATIO), largura toda do cartão até 450px (= 300px de
+   altura). Limitar a largura, e não a altura, mantém o recorte inteiro quando o insight ocupa
+   a linha toda (telas médias). object-fit: cover corta o centro de imagens sem recorte em vez
+   de deformar. O !important vence o max-width que o Streamlit põe direto na imagem. */
+.st-key-insight-character img, .image-empty {
+    display: block; margin: 0 auto; width: 100%; max-width: 450px !important;
+    aspect-ratio: var(--image-ratio); object-fit: cover;
     border-radius: 16px; border: 1px solid var(--border);
 }
 /* Sem o botão de tela cheia que o Streamlit põe nas imagens. */
 .st-key-insight-character [data-testid="stElementToolbar"] { display: none; }
-.character-name { font-family: var(--display); font-weight: 700; color: var(--accent); }
-.character-name span { font-family: inherit; font-weight: 500; color: var(--muted); }
-.character-quote { color: var(--ink-2); font-style: italic; line-height: 1.5; margin: 4px 0 0; }
+/* Os blocos do Streamlit em volta da imagem encolhem até o tamanho dela; quando o cartão é mais
+   largo que 450px (telas médias), isto a centraliza. */
+.st-key-insight-character [data-testid="stFullScreenFrame"] { display: flex; justify-content: center; }
+.character-name {
+    font-family: var(--display); font-weight: 700; font-size: 1.15rem; line-height: 1.3; color: var(--accent);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.character-name span { font-family: inherit; font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+.character-quote {
+    color: var(--ink); font-size: 1.05rem; font-style: italic; line-height: 1.5; height: 3em; margin: 4px 0 0;
+    overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
 .readiness span { color: var(--muted); font-size: 0.8rem; }
+/* Celular (cartões empilhados): sem alturas fixas, o texto quebra normalmente. */
+@media (max-width: 640px) {
+    .st-key-overview-head .page-subtitle { white-space: normal; }
+    .insight-title { height: auto; white-space: normal; }
+    .insight-text, .character-quote { height: auto; display: block; }
+    .character-name { white-space: normal; }
+}
 
 /* Alinhamento da grade: as colunas esticam até a altura da mais alta, e dentro
    de cada coluna os cartões ficam numa grade de linhas 1fr. Uma linha 1fr nunca
@@ -96,7 +135,10 @@ CSS = """
         height: 100%; display: flex; flex-direction: column;
     }
     [class*="st-key-card-"] .card-row { flex: 1 1 auto; }
-    [class*="st-key-card-"] .card-row .sparkline { flex: 1 1 auto; height: auto; min-height: 72px; }
+    /* Base fixa de 72px (e não height: auto, que segue a proporção do desenho e cresce com a
+       largura): assim os cartões laterais não ditam a altura da grade e o Insight não fica
+       com sobra no fim; a sparkline só cresce para ocupar o espaço que sobrar. */
+    [class*="st-key-card-"] .card-row .sparkline { flex: 1 0 72px; height: auto; min-height: 72px; }
 }
 /* Telas médias: insight em cima, cartões 2 a 2. */
 @media (min-width: 641px) and (max-width: 1100px) {
@@ -107,6 +149,11 @@ CSS = """
     .st-key-overview-grid [data-testid="stColumn"]:nth-child(2) {
         order: -1; flex-basis: 100% !important; min-width: 100% !important;
     }
+    /* Insight na largura toda: o texto mais longo ocupa no máximo 3 linhas. */
+    .insight-text { height: 4.8em; -webkit-line-clamp: 3; }
+    /* Saudação mais estreita: a frase do topo quebra linha em vez de cortar (ela muda só de um
+       dia para o outro, então não empurra nada ao navegar pelas noites). */
+    .st-key-overview-head .page-subtitle { white-space: normal; }
 }
 </style>
 """
@@ -125,12 +172,14 @@ def sparkline(values, color, uid, width=200, height=64, pad=4):
     ]
     line = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
     area = f"0,{height} {line} {width},{height}"
+    # Degradê da cor até transparente; com quadrados sólidos, as duas paradas iguais = cor lisa.
+    top, bottom = (0.14, 0.14) if settings.is_solid() else (0.35, 0)
     return ui.svg_image(f"""
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" preserveAspectRatio="none">
   <defs>
     <linearGradient id="fill-{uid}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="{color}" stop-opacity="0.35"/>
-      <stop offset="1" stop-color="{color}" stop-opacity="0"/>
+      <stop offset="0" stop-color="{color}" stop-opacity="{top}"/>
+      <stop offset="1" stop-color="{color}" stop-opacity="{bottom}"/>
     </linearGradient>
   </defs>
   <polygon points="{area}" fill="url(#fill-{uid})"/>
@@ -148,7 +197,9 @@ def card(group, help_text, label, df, column, unit, delta_unit, direction, windo
         df = df[df["date"] <= until]
     stats = charts.summarize(df, column)
     with st.container(border=True, key=f"card-{group}"):
+        # --tone: a cor do grupo, que a aparência "Branco com cores" usa para tingir o cartão.
         head = f"""
+<style>.st-key-card-{group} {{ --tone: {info['color']}; }}</style>
 <div class="card-head">
   <span class="chip" style="--c:{info['color']}">{ui.icon(info['icon'])}</span>
   <span class="card-title">{info['title']}</span>{ui.tip(help_text + DELTA_HELP)}
@@ -204,18 +255,24 @@ def shift_night(step):
 
 
 insight = insights.build_insight(sleep, recharge, nights[-1 - offset], levels) if nights else None
-accent = STATE_COLORS[insight["state"]] if insight else STATE_COLORS["neutral"]
+# Cor do Insight pelo resultado da recuperação (baixa, normal ou boa), personalizável em Configurações.
+state = insight["state"] if insight else "neutral"
+accent = ui.insight_colors()[f"insight-{state}"]["color"]
 
 st.html(CSS)
 ui.set_accent(accent)
 
-hello, period_col = st.columns([4, 1], vertical_alignment="bottom")
-hello.html(f"""
+# Cabeçalho: saudação à esquerda; à direita, a barra do topo (status, engrenagem, Sincronizar)
+# em cima e o período embaixo. A barra divide a linha com a saudação para não sobrar uma
+# linha vazia no topo; nas outras páginas, o dashboard.py a desenha com o link de voltar.
+with st.container(horizontal=True, key="overview-head"):
+    st.html(f"""
 <div class="eyebrow" style="color:var(--muted)">{ui.long_date(date.today())}</div>
 <div class="page-title">{greeting()}</div>
 <div class="page-subtitle">{escape(today['summary']) if today else 'Sincronize para ver seus dados.'}</div>""")
-with period_col:
-    window = ui.period_control("overview")
+    with st.container(width="content", key="overview-side"):
+        ui.top_actions(gear=True)
+        window = ui.period_control("overview")
 
 if sleep.empty and recharge.empty and activity.empty:
     charts.require_data(sleep)
@@ -226,7 +283,8 @@ night = insight["date"] if insight else None
 activity_day = night - timedelta(days=1) if night is not None else None
 
 with st.container(key="overview-grid"):
-    left, center, right = st.columns(3, gap="medium")
+    # Coluna do centro mais larga: a imagem do Insight é 16:9, então só cresce se o cartão alargar.
+    left, center, right = st.columns([1, 1.4, 1], gap="medium")
 
 with left:
     card("sleep",
@@ -280,16 +338,17 @@ with center:
 <p class="insight-text">{escape(insight['text'])}</p>
 {readiness}""")
             if insight["character"]:
-                image = settings.image_path(insight["status"])
-                ui.image_vars(".st-key-insight-character", settings.image_style(insight["status"]))
+                image = ui.level_image(insight["status"])
                 with st.container(key="insight-character"):
-                    if image.exists():
-                        st.image(str(image), width="stretch")
+                    if image is not None:
+                        st.image(image, width="stretch")
+                    else:  # mesmo espaço da imagem, para as seções abaixo não subirem
+                        st.html('<div class="image-empty"></div>')
                     st.html(f"""
 <div class="character">
   <div class="character-name">{escape(insight['character'])}
     <span>· {escape(insight['mood'])}</span></div>
-  <p class="character-quote">“{escape(insight['quote'])}”</p>
+  <p class="character-quote">“{escape(insight['quote'].strip().strip('"“”'))}”</p>
 </div>""")
 
 with right:

@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from app.insights import build_insight, stage_segments
+from app.insights import LEVELS, TEXT_LIMITS, build_insight, stage_segments
 
 DATES = pd.date_range("2026-01-01", periods=8)
 
@@ -52,6 +52,13 @@ class BuildInsightTest(unittest.TestCase):
 
     def test_no_data_returns_none(self):
         self.assertIsNone(build_insight(self.sleep, pd.DataFrame()))
+
+    def test_default_texts_fit_their_limits(self):
+        # Cada seção do Insight tem altura fixa; os textos padrão precisam caber nela.
+        for status, texts in LEVELS.items():
+            for field, limit in TEXT_LIMITS.items():
+                with self.subTest(status=status, field=field):
+                    self.assertLessEqual(len(texts[field]), limit)
 
 
 class StageSegmentsTest(unittest.TestCase):

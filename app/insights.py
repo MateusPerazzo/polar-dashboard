@@ -20,14 +20,14 @@ STAGE_BY_CODE = {0: "Acordado", 1: "REM", 2: "Leve", 3: "Leve", 4: "Profundo"}
 # Os conselhos seguem as dicas do app da Polar para cada nível.
 LEVELS = {
     1: {
-        "headline": "Até a força da juventude precisa de pausa.",
+        "headline": "Até a juventude precisa de pausa.",
         "summary": "Sua recuperação ficou muito abaixo do normal esta noite.",
         "advice": "Descanse ou faça só um treino bem leve, e tente dormir mais cedo hoje.",
         "character": "Rock Lee", "mood": "completamente exausto",
         "quote": "O fogo da juventude não se apaga com um dia ruim. Amanhã eu volto em dobro!",
     },
     2: {
-        "headline": "Até o Espadachim Negro precisa baixar a espada.",
+        "headline": "Hora de baixar a espada.",
         "summary": "Sua recuperação ficou abaixo do normal esta noite.",
         "advice": "Respeite a necessidade do seu corpo e treine leve. Descansar também vale.",
         "character": "Guts", "mood": "marcado pela batalha, mas de pé",
@@ -62,6 +62,11 @@ LEVELS = {
         "quote": "Oi, eu sou o Goku! Hoje dá para ir além do limite. Vamos treinar!",
     },
 }
+# Máximo de caracteres de cada texto, para caber na sua seção de altura fixa no Insight do dia
+# (título: 1 linha; conselho: completa as 4 linhas do texto; personagem e humor: 1 linha;
+# fala: 2 linhas) e, a frase do topo, em 1 linha ao lado da barra do topo. Usado como
+# max_chars em Configurações.
+TEXT_LIMITS = {"headline": 34, "summary": 64, "advice": 90, "character": 24, "mood": 32, "quote": 80}
 
 
 def classify(status):
