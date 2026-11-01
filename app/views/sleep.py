@@ -7,8 +7,9 @@ import streamlit as st
 from app import charts, ui
 from app.insights import CONTINUITY_CLASS, USUAL_SCALE, stage_segments
 
-COLOR = ui.GROUPS["sleep"]["color"]
-HR_COLOR = ui.GROUPS["heart-rate"]["color"]
+GROUPS = ui.groups()
+COLOR = GROUPS["sleep"]["color"]
+HR_COLOR = GROUPS["heart-rate"]["color"]
 STAGE_ORDER = ["Profundo", "Leve", "REM", "Acordado"]  # de baixo para cima
 
 

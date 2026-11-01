@@ -5,7 +5,7 @@ import streamlit as st
 
 from app import charts, ui
 
-COLOR = ui.GROUPS["heart-rate"]["color"]
+COLOR = ui.groups()["heart-rate"]["color"]
 
 recharge = charts.load("SELECT date, heart_rate_avg FROM nightly_recharge ORDER BY date")
 daily = charts.load(

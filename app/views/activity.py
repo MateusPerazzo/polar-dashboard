@@ -4,7 +4,7 @@ import streamlit as st
 
 from app import charts, ui
 
-COLOR = ui.GROUPS["activity"]["color"]
+COLOR = ui.groups()["activity"]["color"]
 
 activity = charts.load("SELECT * FROM daily_activity ORDER BY date")
 
