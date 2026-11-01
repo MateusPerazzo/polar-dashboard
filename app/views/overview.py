@@ -1,12 +1,10 @@
 from datetime import date, datetime, timedelta
-from pathlib import Path
+from html import escape
 
 import streamlit as st
 
-from app import charts, insights, ui
+from app import charts, insights, settings, ui
 
-# Uma imagem por status do Nightly Recharge (1.png = muito ruim ... 6.png = muito boa).
-RECHARGE_IMAGES = Path(__file__).resolve().parent.parent / "assets" / "recharge"
 STATE_COLORS = {"good": ui.TONES["good"], "neutral": "#3987e5", "low": ui.TONES["bad"]}
 DELTA_HELP = " A pílula compara com a média dos 7 registros anteriores."
 
@@ -66,10 +64,12 @@ CSS = """
 
 /* Personagem do status: encostado no fim do cartão, imagem com cantos arredondados. */
 .st-key-insight-character { margin-top: auto; gap: 10px; }
-/* Altura limitada (16:9, no máximo 220px) para o insight não esticar demais os cartões;
+/* Formato, altura máxima e enquadramento vêm de Configurações (ui.image_vars); os padrões
+   (16:9, 220px, centro) evitam que o insight estique demais os cartões.
    object-fit: cover corta as bordas em vez de deformar a imagem. */
 .st-key-insight-character img {
-    width: 100%; aspect-ratio: 16 / 9; max-height: 220px; object-fit: cover;
+    width: 100%; aspect-ratio: var(--img-ratio, 16 / 9); max-height: var(--img-height, 220px);
+    object-fit: var(--img-fit, cover); object-position: var(--img-position, center);
     border-radius: 16px; border: 1px solid var(--border);
 }
 /* Sem o botão de tela cheia que o Streamlit põe nas imagens. */
@@ -143,7 +143,7 @@ def card(group, help_text, label, df, column, unit, delta_unit, direction, windo
          until=None, ring_total=None):
     """until: última data considerada (a noite escolhida no Insight); None = tudo.
     ring_total: se informado, mostra o valor num anel (valor / ring_total)."""
-    info = ui.GROUPS[group]
+    info = ui.groups()[group]
     if until is not None and not df.empty:
         df = df[df["date"] <= until]
     stats = charts.summarize(df, column)
@@ -189,7 +189,8 @@ activity = charts.load(
     "SELECT date, calories FROM daily_activity WHERE date < ? ORDER BY date",
     (str(date.today()),),
 )
-today = insights.build_insight(sleep, recharge)
+levels = ui.levels()
+today = insights.build_insight(sleep, recharge, levels=levels)
 
 # Noite mostrada no Insight: deslocamento a partir da mais recente (0 = última noite),
 # guardado na sessão para as setas ‹ › funcionarem entre recargas.
@@ -202,7 +203,7 @@ def shift_night(step):
     st.session_state["insight_offset"] += step
 
 
-insight = insights.build_insight(sleep, recharge, nights[-1 - offset]) if nights else None
+insight = insights.build_insight(sleep, recharge, nights[-1 - offset], levels) if nights else None
 accent = STATE_COLORS[insight["state"]] if insight else STATE_COLORS["neutral"]
 
 st.html(CSS)
@@ -212,7 +213,7 @@ hello, period_col = st.columns([4, 1], vertical_alignment="bottom")
 hello.html(f"""
 <div class="eyebrow" style="color:var(--muted)">{ui.long_date(date.today())}</div>
 <div class="page-title">{greeting()}</div>
-<div class="page-subtitle">{today['summary'] if today else 'Sincronize para ver seus dados.'}</div>""")
+<div class="page-subtitle">{escape(today['summary']) if today else 'Sincronize para ver seus dados.'}</div>""")
 with period_col:
     window = ui.period_control("overview")
 
@@ -273,20 +274,22 @@ with center:
   <div><strong>Recuperação {insight['status_label']}</strong>
   <span>Status do Nightly Recharge da Polar</span></div>
 </div>"""
+            # Os textos podem ter sido editados em Configurações: escape evita que "<" ou "&" quebrem o HTML.
             st.html(f"""
-<div class="insight-title">{insight['headline']}</div>
-<p class="insight-text">{insight['text']}</p>
+<div class="insight-title">{escape(insight['headline'])}</div>
+<p class="insight-text">{escape(insight['text'])}</p>
 {readiness}""")
             if insight["character"]:
-                image = RECHARGE_IMAGES / f"{insight['status']}.png"
+                image = settings.image_path(insight["status"])
+                ui.image_vars(".st-key-insight-character", settings.image_style(insight["status"]))
                 with st.container(key="insight-character"):
                     if image.exists():
                         st.image(str(image), width="stretch")
                     st.html(f"""
 <div class="character">
-  <div class="character-name">{insight['character']}
-    <span>· {insight['mood']}</span></div>
-  <p class="character-quote">“{insight['quote']}”</p>
+  <div class="character-name">{escape(insight['character'])}
+    <span>· {escape(insight['mood'])}</span></div>
+  <p class="character-quote">“{escape(insight['quote'])}”</p>
 </div>""")
 
 with right:

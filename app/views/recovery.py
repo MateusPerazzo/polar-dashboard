@@ -3,8 +3,9 @@ import streamlit as st
 from app import charts, ui
 from app.insights import RECHARGE_STATUS, USUAL_SCALE
 
-COLOR = ui.GROUPS["recovery"]["color"]
-HR_COLOR = ui.GROUPS["heart-rate"]["color"]
+GROUPS = ui.groups()
+COLOR = GROUPS["recovery"]["color"]
+HR_COLOR = GROUPS["heart-rate"]["color"]
 
 recharge = charts.load("SELECT * FROM nightly_recharge ORDER BY date")
 

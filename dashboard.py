@@ -11,19 +11,25 @@ pages = [
     st.Page("app/views/recovery.py", title="Recuperação"),
     st.Page("app/views/heart_rate.py", title="Frequência cardíaca"),
     st.Page("app/views/activity.py", title="Atividade"),
+    st.Page("app/views/settings.py", title="Configurações"),
 ]
 current = st.navigation(pages, position="hidden")
 
 ui.inject_global_css()
 
 # Barra do topo, igual em todas as páginas.
-back, status, action = st.columns([2, 3, 1.3], vertical_alignment="center")
+back, status, gear, action = st.columns([2, 3, 0.4, 1.3], vertical_alignment="center")
 if current.title != "Resumo":
     back.page_link("app/views/overview.py", label="Resumo", icon=":material/arrow_back:")
 status.html(
     f'<div class="topbar" style="justify-content:flex-end">'
     f'<span class="dot"></span>{ui.synced_at()}</div>'
 )
+# Engrenagem discreta, só no Resumo; o texto fica oculto, mas é lido por leitores de tela.
+if current.title == "Resumo":
+    with gear.container(key="settings-link"):
+        st.page_link("app/views/settings.py", label="Configurações",
+                     icon=":material/settings:", help="Configurações")
 if action.button("Sincronizar", icon=":material/sync:", width="stretch", key="sync"):
     with st.spinner("Buscando dados..."):
         sync.main()

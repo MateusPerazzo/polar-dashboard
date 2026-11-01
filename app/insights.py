@@ -62,8 +62,6 @@ LEVELS = {
         "quote": "Oi, eu sou o Goku! Hoje dá para ir além do limite. Vamos treinar!",
     },
 }
-# Sem status (a Polar ainda não calculou): mensagens do nível OK, sem personagem.
-NO_STATUS = {key: LEVELS[4][key] for key in ("headline", "summary", "advice")}
 
 
 def classify(status):
@@ -91,8 +89,9 @@ def stage_segments(hypnogram, night_end):
     return merged.dropna(subset=["stage"])
 
 
-def build_insight(sleep, recharge, night=None):
-    """night: data da noite a mostrar; None = a mais recente. A média usa só noites anteriores."""
+def build_insight(sleep, recharge, night=None, levels=LEVELS):
+    """night: data da noite a mostrar; None = a mais recente. A média usa só noites anteriores.
+    levels: mensagens por status (padrão LEVELS; Configurações passa as personalizadas)."""
     if recharge.empty:
         return None
     is_latest = night is None or night >= recharge["date"].max()
@@ -103,7 +102,9 @@ def build_insight(sleep, recharge, night=None):
     last = recharge.iloc[-1]
     status = None if pd.isna(last["nightly_recharge_status"]) else int(last["nightly_recharge_status"])
     state = classify(status)
-    level = LEVELS.get(status, NO_STATUS)
+    # Sem status (a Polar ainda não calculou): mensagens do nível OK, sem personagem.
+    no_status = {key: levels[4][key] for key in ("headline", "summary", "advice")}
+    level = levels.get(status, no_status)
 
     facts = []
     hrv_baseline = recharge["heart_rate_variability_avg"].iloc[-8:-1].mean()

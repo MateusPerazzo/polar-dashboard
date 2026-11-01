@@ -7,9 +7,11 @@ from html import escape
 import pandas as pd
 import streamlit as st
 
+from app import insights, settings
 from polar import db
 
 # Uma cor por grupo, usada em todo o app (cartões, páginas e gráficos).
+# São os padrões; as páginas leem por groups(), que aplica as cores personalizadas.
 GROUPS = {
     "sleep": {"title": "Sono", "color": "#eda100", "icon": "bedtime", "page": "app/views/sleep.py"},
     "recovery": {"title": "Recuperação", "color": "#199e70", "icon": "monitor_heart", "page": "app/views/recovery.py"},
@@ -98,6 +100,13 @@ header[data-testid="stHeader"] { background: transparent; }
 /* Cabeçalhos */
 .topbar { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; }
 .topbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+/* Engrenagem: só o ícone, cinza; o texto sai da tela, mas continua para leitores de tela. */
+.st-key-settings-link { align-items: flex-end; }
+.st-key-settings-link a { color: var(--muted); }
+.st-key-settings-link a:hover { color: var(--ink); }
+.st-key-settings-link a p {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
 .eyebrow {
     display: flex; align-items: center; gap: 8px;
     font-size: 0.75rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
@@ -166,6 +175,28 @@ header[data-testid="stHeader"] { background: transparent; }
 .pill-neutral { color: var(--ink-2); background: rgba(255, 255, 255, 0.08); }
 </style>
 """
+
+
+def groups():
+    """GROUPS com as cores escolhidas em Configurações (data/settings.json)."""
+    return settings.apply_colors(GROUPS, settings.load().get("colors", {}))
+
+
+def levels():
+    """insights.LEVELS com os textos escolhidos em Configurações."""
+    return settings.apply_levels(insights.LEVELS, settings.load().get("levels", {}))
+
+
+def image_vars(selector, style):
+    """Define as variáveis CSS da imagem de um nível (formato, altura máxima e enquadramento)
+    para o container em selector. Os valores vêm de listas fechadas (settings.apply_image_style)."""
+    original = style["ratio"] == "Original"
+    st.html(
+        f"<style>{selector} {{"
+        f" --img-ratio: {'auto' if original else style['ratio'].replace(':', ' / ')};"
+        f" --img-fit: {'contain' if original else 'cover'};"
+        f" --img-height: {style['height']}px; --img-position: {style['position']}; }}</style>"
+    )
 
 
 def inject_global_css():
@@ -283,7 +314,7 @@ def period_control(key):
 
 
 def page_header(group, eyebrow, subtitle):
-    info = GROUPS[group]
+    info = groups()[group]
     set_accent(info["color"])
     text, control = st.columns([4, 1], vertical_alignment="bottom")
     text.html(f"""
