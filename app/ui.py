@@ -1,14 +1,17 @@
 """Identidade visual do app: cores, CSS global e componentes em HTML."""
 
 import base64
+import io
 from datetime import date, datetime
 from html import escape
+from string import Template
 
 import pandas as pd
 import streamlit as st
+from PIL import Image
 
 from app import insights, settings
-from polar import db
+from polar import db, sync
 
 # Uma cor por grupo, usada em todo o app (cartões, páginas e gráficos).
 # São os padrões; as páginas leem por groups(), que aplica as cores personalizadas.
@@ -28,7 +31,22 @@ SLEEP_STAGES = {
     "REM": "#199e70",
     "Acordado": "#d95926",
 }
-TONES = {"good": "#0ca30c", "bad": "#ec835a", "neutral": "#898781"}
+# Tons das pílulas de variação (verde = melhor, vermelho = pior). O vermelho é o "critical" da
+# paleta de status do skill dataviz, clareado no fundo preto para o texto pequeno ler bem
+# (fundo branco: --bad em LIGHT_CSS).
+TONES = {"good": "#0ca30c", "bad": "#ef6461", "neutral": "#898781"}
+# Cor de destaque do Insight do dia por resultado da recuperação (insights.classify: "low",
+# "neutral", "good"). São os padrões; o Resumo lê por insight_colors(), que aplica as cores
+# personalizadas. Os nomes têm prefixo porque ficam no mesmo "colors" do JSON que os grupos.
+INSIGHT_COLORS = {
+    # Baixa: o mesmo vermelho das pílulas de perda.
+    "insight-low": {"title": "Insight · recuperação baixa", "help": "Níveis 1 a 3 do Nightly Recharge.",
+                    "color": TONES["bad"]},
+    "insight-neutral": {"title": "Insight · recuperação normal",
+                        "help": "Nível 4 do Nightly Recharge e noites ainda sem status.", "color": "#3987e5"},
+    "insight-good": {"title": "Insight · recuperação boa", "help": "Níveis 5 e 6 do Nightly Recharge.",
+                     "color": TONES["good"]},
+}
 
 WEEKDAYS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",
             "sexta-feira", "sábado", "domingo"]
@@ -47,12 +65,12 @@ GLOBAL_CSS = """
     --ink-2: #c3c2b7;
     --muted: #898781;
     --good: #0ca30c;
-    --bad: #ec835a;
+    --bad: #ef6461;
     --accent: #3987e5;
     --display: "Space Grotesk", "Inter", system-ui, sans-serif;
 }
 
-.block-container { max-width: 1320px; padding: 1rem clamp(1rem, 4vw, 3rem) 3rem; }
+.block-container { max-width: 1320px; padding: 1rem clamp(1rem, 4vw, 3rem); }
 header[data-testid="stHeader"] { background: transparent; }
 
 /* Ícones do Material Symbols, a mesma fonte que o Streamlit já carrega. */
@@ -74,7 +92,8 @@ header[data-testid="stHeader"] { background: transparent; }
     position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
     width: max-content; max-width: min(260px, 70vw);
     padding: 8px 12px; border-radius: 10px;
-    background: #23262b; color: var(--ink); border: 1px solid var(--border);
+    /* Cores fixas: o balão é escuro nas duas aparências (dentro de um cartão branco, --ink é escuro). */
+    background: #23262b; color: #f0efec; border: 1px solid rgba(255, 255, 255, 0.08);
     font: 400 0.8rem/1.45 "Inter", sans-serif; letter-spacing: normal;
     text-transform: none; white-space: normal; text-align: left;
     opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 10;
@@ -92,6 +111,13 @@ header[data-testid="stHeader"] { background: transparent; }
     background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, transparent), var(--surface) 55%);
     border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
 }
+/* Seções recolhíveis (st.expander com key section-*, em Configurações): com a cara dos painéis. */
+[class*="st-key-section-"] details {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+}
+/* O cabeçalho do expander tem fundo próprio do tema escuro; transparente, vale o da seção. */
+[class*="st-key-section-"] summary { background: transparent; border-radius: 20px; }
+[class*="st-key-section-"] summary p { font-family: var(--display); font-size: 1.15rem; font-weight: 700; }
 
 /* Linhas de painéis quebram quando a coluna ficaria estreita demais. */
 [class*="st-key-row-"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
@@ -177,9 +203,88 @@ header[data-testid="stHeader"] { background: transparent; }
 """
 
 
+# Fundo branco (Configurações → Aparência): página toda clara. O tema do Streamlit continua
+# escuro (config.toml), então o CSS redefine as variáveis do app e pinta por cima os elementos do
+# Streamlit que trazem cores próprias. Combina com quadrados em degradê ou sólidos (SOLID_CSS).
+LIGHT_CSS = """
+<style>
+:root {
+    --surface: #ffffff; --surface-hover: #f6f6f4; --field: #f2f2f0;
+    --border: rgba(0, 0, 0, 0.1); --border-strong: rgba(0, 0, 0, 0.28);
+    --ink: #17181b; --ink-2: #3f4248; --muted: #6b6e76;
+    --good: #0a7d0a; --bad: #b52828;
+}
+.stApp { background: #ffffff; color: var(--ink); }
+/* Cartão branco sobre fundo branco: a borda e uma sombra leve separam os dois. */
+[class*="st-key-panel-"], [class*="st-key-card-"], .st-key-hero, .st-key-insight,
+[class*="st-key-section-"] details {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+/* Textos do Streamlit. */
+[data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p, [data-testid="stMarkdownContainer"],
+button[role="tab"] p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary *,
+[data-testid="stPageLink-NavLink"], [data-testid="stPageLink-NavLink"] * {
+    color: var(--ink);
+}
+.st-key-settings-link a, .st-key-settings-link a * { color: var(--muted); }
+/* Legendas: o Streamlit as deixa com opacity 0.6, que sobre o branco fica claro demais. */
+[data-testid="stCaptionContainer"] { color: var(--muted); opacity: 1; }
+/* O "?" dos campos é um SVG com o traço claro fixo. */
+[data-testid="stTooltipHoverTarget"] svg, [data-testid="stTooltipHoverTarget"] svg * { stroke: var(--muted); }
+/* Botões secundários (Sincronizar, Restaurar...) e as opções não escolhidas do seletor de período
+   (a escolhida mantém o azul do tema). */
+[data-testid="stBaseButton-secondary"], [data-variant="segmented_control"][aria-checked="false"] {
+    color: var(--ink); background: transparent; border-color: var(--border-strong);
+}
+/* Campos (texto, caixa de texto, lista, upload): caixas claras em vez das escuras do tema. */
+[data-testid="stTextInputRootElement"], [data-testid="stTextAreaRootElement"],
+[data-testid="stSelectbox"] [role="group"], [data-testid="stFileUploaderDropzone"] {
+    background: var(--field); border-color: var(--border);
+}
+[data-testid="stTextInputRootElement"] input, [data-testid="stTextAreaRootElement"] textarea,
+[data-testid="stSelectbox"] input, [data-testid="stSelectbox"] button,
+[data-testid="stFileUploaderDropzone"] * {
+    color: var(--ink);
+}
+/* Opção não escolhida: círculo branco com borda, em vez do preto cheio do tema escuro
+   (a escolhida mantém o azul). */
+[data-testid="stRadioOption"]:has(input:not(:checked)) > div > div:first-child {
+    background: var(--surface); border: 1px solid var(--border-strong);
+}
+.pill-neutral { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+</style>
+"""
+# Quadrados "Sólido": cada um num tom liso da sua cor, misturada à base do fundo (SOLID_MIX).
+# --tone é a cor do grupo nos cartões do Resumo (definida em overview.card); nos demais, vale a
+# cor de destaque da página (--accent). Template usa $, que não conflita com as chaves do CSS.
+SOLID_CSS = Template("""
+<style>
+[class*="st-key-panel-"], [class*="st-key-card-"], .st-key-hero, .st-key-insight,
+[class*="st-key-section-"] details {
+    --surface: color-mix(in srgb, var(--tone, var(--accent)) $fill, $base);
+    --surface-hover: color-mix(in srgb, var(--tone, var(--accent)) $hover, $base);
+    --border: color-mix(in srgb, var(--tone, var(--accent)) $line, $base);
+    --border-strong: color-mix(in srgb, var(--tone, var(--accent)) $strong, $base);
+}
+/* Sem o degradê da cor de destaque; a borda continua na cor. */
+.st-key-hero, .st-key-insight { background: var(--surface); }
+</style>
+""")
+# Base e quanto da cor entra no tom: no preto, mais cor (senão o tom some no escuro).
+SOLID_MIX = {
+    "dark": {"base": "#121418", "fill": "20%", "hover": "26%", "line": "40%", "strong": "62%"},
+    "light": {"base": "#ffffff", "fill": "10%", "hover": "16%", "line": "30%", "strong": "55%"},
+}
+
+
 def groups():
     """GROUPS com as cores escolhidas em Configurações (data/settings.json)."""
     return settings.apply_colors(GROUPS, settings.load().get("colors", {}))
+
+
+def insight_colors():
+    """INSIGHT_COLORS com as cores escolhidas em Configurações."""
+    return settings.apply_colors(INSIGHT_COLORS, settings.load().get("colors", {}))
 
 
 def levels():
@@ -187,20 +292,53 @@ def levels():
     return settings.apply_levels(insights.LEVELS, settings.load().get("levels", {}))
 
 
-def image_vars(selector, style):
-    """Define as variáveis CSS da imagem de um nível (formato, altura máxima e enquadramento)
-    para o container em selector. Os valores vêm de listas fechadas (settings.apply_image_style)."""
-    original = style["ratio"] == "Original"
-    st.html(
-        f"<style>{selector} {{"
-        f" --img-ratio: {'auto' if original else style['ratio'].replace(':', ' / ')};"
-        f" --img-fit: {'contain' if original else 'cover'};"
-        f" --img-height: {style['height']}px; --img-position: {style['position']}; }}</style>"
-    )
+@st.cache_data(show_spinner=False)
+def _cropped_png(path, modified, crop):
+    # modified (data de modificação) entra na chave do cache: trocar a imagem refaz o recorte.
+    with Image.open(path) as image:
+        # fit_crop adapta recortes salvos num formato anterior (16:9) ao atual.
+        box = settings.crop_pixels(settings.fit_crop(list(crop), image.size), image.size)
+        buffer = io.BytesIO()
+        image.crop(box).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def level_image(status):
+    """O que passar ao st.image para o nível: o caminho da imagem ou o recorte em PNG; None sem imagem."""
+    path = settings.image_path(status)
+    crop = settings.image_crop(status)
+    if not path.exists():
+        return None
+    if crop is None:
+        return str(path)
+    return _cropped_png(str(path), path.stat().st_mtime, tuple(crop))
 
 
 def inject_global_css():
-    st.html(GLOBAL_CSS)
+    # --image-ratio: formato da imagem do Insight, da mesma fonte que a moldura de recorte.
+    width, height = settings.IMAGE_RATIO
+    look = settings.look()
+    extra = LIGHT_CSS if look["background"] == "light" else ""
+    if look["cards"] == "solid":
+        extra += SOLID_CSS.substitute(SOLID_MIX[look["background"]])
+    st.html(GLOBAL_CSS + f"<style>:root {{ --image-ratio: {width} / {height}; }}</style>" + extra)
+
+
+def top_actions(gear=False):
+    """Barra do topo, alinhada à direita: status da sincronização, engrenagem das
+    Configurações (gear=True, só no Resumo) e o botão Sincronizar."""
+    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center",
+                      key="top-actions"):
+        st.html(f'<div class="topbar"><span class="dot"></span>{synced_at()}</div>', width="content")
+        if gear:
+            # Engrenagem discreta; o texto fica oculto, mas é lido por leitores de tela.
+            with st.container(width="content", key="settings-link"):
+                st.page_link("app/views/settings.py", label="Configurações",
+                             icon=":material/settings:", help="Configurações")
+        if st.button("Sincronizar", icon=":material/sync:", width=200, key="sync"):
+            with st.spinner("Buscando dados..."):
+                sync.main()
+            st.rerun()
 
 
 def set_accent(color):
@@ -304,10 +442,12 @@ def hero(kicker, title, help_text, badge, center_html, stats, note):
 def period_control(key):
     current = st.session_state.get("period_days", 7)
     default = next(label for label, days in PERIODS.items() if days == current)
-    choice = st.segmented_control(
-        "Período", list(PERIODS), default=default, key=f"period-{key}",
-        label_visibility="collapsed",
-    )
+    # Alinhado à direita: encosta na borda direita da página, como os cartões e o Sincronizar.
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        choice = st.segmented_control(
+            "Período", list(PERIODS), default=default, key=f"period-{key}",
+            label_visibility="collapsed",
+        )
     days = PERIODS.get(choice, current)
     st.session_state["period_days"] = days
     return days

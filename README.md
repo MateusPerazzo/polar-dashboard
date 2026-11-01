@@ -46,9 +46,10 @@ Cada cartão do Resumo abre uma página com a evolução no período, as tendên
 | **Frequência cardíaca** | FC média noturna, mínima e máxima por dia e FC contínua ao longo do dia. |
 | **Atividade** | Calorias (ativas e totais), passos, tempo ativo e alertas de inatividade. |
 
-**Configurações** (engrenagem no topo do Resumo)
-- **Cores:** troque a cor de cada grupo; ela vale para cartões, títulos e gráficos.
-- **Níveis de recuperação:** para cada um dos 6 níveis, edite o título, a frase do topo, o conselho, o personagem, o humor e a fala, e envie uma imagem própria (PNG, JPG ou WEBP). O formato do corte, a altura máxima e o enquadramento da imagem também são ajustáveis, com prévia.
+**Configurações** (engrenagem no topo do Resumo), em seções que abrem e fecham pela seta do título
+- **Aparência:** duas escolhas independentes, em todas as páginas e mantendo as cores escolhidas: **fundo** preto (padrão) ou branco, e **quadrados** com degradê (padrão: neutros, com degradê das cores) ou sólidos (cada um num tom liso da sua cor).
+- **Cores:** troque a cor de cada grupo, que vale para cartões, títulos e gráficos, e as 3 cores do Insight do dia, uma para cada resultado da recuperação (baixa, normal e boa).
+- **Níveis de recuperação:** para cada um dos 6 níveis, edite o título, a frase do topo, o conselho, o personagem, o humor e a fala, e envie uma imagem própria (PNG, JPG ou WEBP). A imagem pode ser recortada arrastando uma moldura em 3:2, o formato em que ela aparece no Insight, para escolher o trecho e o zoom, com prévia. A imagem original nunca é alterada: só a posição da moldura é salva.
 - **Restaurar padrão:** volta as cores, os textos ou a imagem de um nível ao original.
 
 **Em todas as páginas**
@@ -116,7 +117,7 @@ O app abre em `http://localhost:8501`.
 ## Estrutura
 
 ```
-dashboard.py        ponto de entrada: navegação, CSS global e barra do topo
+dashboard.py        ponto de entrada: navegação, CSS global e barra do topo das páginas de detalhe
 polar/              dados (não depende do Streamlit)
   auth.py           OAuth2 com a Polar (roda uma vez)
   api.py            chamadas GET à AccessLink
@@ -146,7 +147,7 @@ Os testes usam `unittest` (biblioteca padrão) e **dados fictícios**. Eles cobr
 
 - **Credenciais:** o client ID, o secret e o token ficam no `.env` e em `data/`, e os dois estão no `.gitignore`.
 - **Dados de saúde:** ficam só em `data/polar.db`, no seu computador.
-- **Personalizações:** cores e textos ficam em `data/settings.json` e as imagens enviadas em `data/recharge/`, também fora do Git.
+- **Personalizações:** aparência, cores e textos ficam em `data/settings.json` e as imagens enviadas em `data/recharge/`, também fora do Git.
 - **Sem serviços externos:** o Insight do dia usa regras locais e nada é enviado a serviços de terceiros. As únicas conexões externas são a API da Polar e as fontes do Google Fonts.
 
 ## Problemas comuns

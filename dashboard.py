@@ -1,7 +1,6 @@
 import streamlit as st
 
 from app import ui
-from polar import sync
 
 st.set_page_config(page_title="Polar Loop", page_icon=":material/monitor_heart:", layout="wide")
 
@@ -17,22 +16,12 @@ current = st.navigation(pages, position="hidden")
 
 ui.inject_global_css()
 
-# Barra do topo, igual em todas as páginas.
-back, status, gear, action = st.columns([2, 3, 0.4, 1.3], vertical_alignment="center")
+# Barra do topo das páginas de detalhe: voltar à esquerda; status e Sincronizar à direita.
+# No Resumo, a barra fica no cabeçalho da própria página, ao lado da saudação (overview.py),
+# para não sobrar uma linha vazia à esquerda.
 if current.title != "Resumo":
-    back.page_link("app/views/overview.py", label="Resumo", icon=":material/arrow_back:")
-status.html(
-    f'<div class="topbar" style="justify-content:flex-end">'
-    f'<span class="dot"></span>{ui.synced_at()}</div>'
-)
-# Engrenagem discreta, só no Resumo; o texto fica oculto, mas é lido por leitores de tela.
-if current.title == "Resumo":
-    with gear.container(key="settings-link"):
-        st.page_link("app/views/settings.py", label="Configurações",
-                     icon=":material/settings:", help="Configurações")
-if action.button("Sincronizar", icon=":material/sync:", width="stretch", key="sync"):
-    with st.spinner("Buscando dados..."):
-        sync.main()
-    st.rerun()
+    with st.container(horizontal=True, vertical_alignment="center", key="topbar"):
+        st.page_link("app/views/overview.py", label="Resumo", icon=":material/arrow_back:")
+        ui.top_actions()
 
 current.run()
