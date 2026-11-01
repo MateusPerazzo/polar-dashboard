@@ -1,4 +1,5 @@
-"""Personalizações do usuário (cores e níveis), guardadas em data/settings.json.
+"""Personalizações do usuário (cores e níveis), guardadas em data/settings.json, e esquemas
+(visuais salvos com nome), em data/schemes/.
 
 O arquivo guarda só o que foi alterado; o resto vem dos padrões do código.
 Fica em data/, que não vai para o Git. Sem dependência do Streamlit.
@@ -6,6 +7,8 @@ Fica em data/, que não vai para o Git. Sem dependência do Streamlit.
 
 import json
 import re
+import shutil
+import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,6 +30,12 @@ HEX_COLOR = re.compile(r"#[0-9a-fA-F]{6}")
 BACKGROUNDS = {"dark": "Preto", "light": "Branco"}
 CARD_STYLES = {"gradient": "Degradê", "solid": "Sólido"}
 DEFAULT_LOOK = {"background": "dark", "cards": "gradient"}
+# Esquemas: data/schemes/<slug>/scheme.json (nome + as partes abaixo do settings.json) e
+# data/schemes/<slug>/recharge/ (cópia das imagens enviadas). O esquema "padrao" não é uma
+# pasta: é o visual original, definido no código e em app/assets/ (vai no repositório).
+SCHEMES_DIR = DATA_DIR / "schemes"
+SCHEME_KEYS = ("colors", "background", "cards", "levels", "images")
+DEFAULT_SCHEME = "padrao"
 
 
 def load():
@@ -62,6 +71,70 @@ def is_light():
 def is_solid():
     """Quadrados em cor lisa (sem degradê)?"""
     return look()["cards"] == "solid"
+
+
+def scheme_slug(name):
+    """Nome do esquema -> nome da pasta: minúsculas, sem acento, só letras, números e hífens
+    ("Verão Claro!" -> "verao-claro"). Vazio se o nome não tiver letra nem número."""
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
+
+
+def snapshot(data):
+    """As partes do settings.json que formam o visual: o que um esquema guarda."""
+    return {key: data[key] for key in SCHEME_KEYS if key in data}
+
+
+def with_snapshot(data, scheme):
+    """settings.json com o visual trocado pelo do esquema; as outras chaves continuam."""
+    rest = {key: value for key, value in data.items() if key not in SCHEME_KEYS}
+    return {**rest, **snapshot(scheme)}
+
+
+def list_schemes():
+    """{slug: nome} dos esquemas salvos, em ordem alfabética do nome."""
+    found = {}
+    for file in SCHEMES_DIR.glob("*/scheme.json"):
+        try:
+            found[file.parent.name] = json.loads(file.read_text(encoding="utf-8"))["name"]
+        except (json.JSONDecodeError, KeyError):
+            continue  # pasta corrompida: fica fora da lista
+    return dict(sorted(found.items(), key=lambda item: item[1].lower()))
+
+
+def save_scheme(name, slug=None):
+    """Salva o visual atual (o que está no settings.json + cópia das imagens enviadas) como
+    esquema. Com slug de um esquema existente, substitui o conteúdo dele."""
+    slug = slug or scheme_slug(name)
+    folder = SCHEMES_DIR / slug
+    shutil.rmtree(folder, ignore_errors=True)
+    (folder / "recharge").mkdir(parents=True)
+    for image in IMAGES_DIR.glob("*.*"):
+        shutil.copy(image, folder / "recharge" / image.name)
+    content = {"name": name, **snapshot(load())}
+    (folder / "scheme.json").write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+    return slug
+
+
+def apply_scheme(slug):
+    """Troca o visual atual pelo do esquema; DEFAULT_SCHEME volta tudo ao original. As imagens
+    enviadas atuais são substituídas pelas do esquema (as que não estão em nenhum esquema se perdem)."""
+    scheme, images = {}, None
+    if slug != DEFAULT_SCHEME:
+        folder = SCHEMES_DIR / slug
+        scheme = json.loads((folder / "scheme.json").read_text(encoding="utf-8"))
+        images = folder / "recharge"
+    save(with_snapshot(load(), scheme))
+    for image in IMAGES_DIR.glob("*.*"):
+        image.unlink()
+    if images and images.exists():
+        IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+        for image in images.iterdir():
+            shutil.copy(image, IMAGES_DIR / image.name)
+
+
+def delete_scheme(slug):
+    shutil.rmtree(SCHEMES_DIR / slug)
 
 
 def custom_image(status):

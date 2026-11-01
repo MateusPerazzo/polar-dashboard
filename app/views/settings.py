@@ -1,3 +1,5 @@
+from html import escape
+
 import streamlit as st
 from PIL import Image
 from streamlit_cropper import st_cropper
@@ -234,6 +236,84 @@ def levels_editor():
                        "8 bits). As imagens que você enviou são apagadas.")
 
 
+def forget_widgets():
+    """Depois de trocar o visual inteiro (aplicar um esquema), os campos precisam reler os valores
+    salvos: o widget guarda o valor antigo na sessão. A moldura de recorte e o upload recomeçam."""
+    for key in list(st.session_state):
+        if str(key).startswith(("color-", "level-", "look-", "crop-start-")):
+            del st.session_state[key]
+    for status in LEVELS:
+        next_image_round(status)
+
+
+def apply_scheme():
+    slug = st.session_state["scheme-pick"]
+    settings.apply_scheme(slug)
+    forget_widgets()
+    name = "Padrão" if slug == settings.DEFAULT_SCHEME else settings.list_schemes()[slug]
+    st.toast(f"Esquema “{name}” aplicado.", icon=":material/check:")
+
+
+def save_new_scheme():
+    name = st.session_state["scheme-name"].strip()
+    slug = settings.scheme_slug(name)
+    existing = settings.list_schemes()
+    if not slug or slug == settings.DEFAULT_SCHEME:
+        st.toast("Escolha um nome com letras ou números (e diferente de “Padrão”).", icon=":material/error:")
+        return
+    if slug in existing:
+        st.toast(f"Já existe o esquema “{existing[slug]}”. Para trocar o conteúdo dele, escolha-o e "
+                 "use “Atualizar com o visual atual”.", icon=":material/error:")
+        return
+    settings.save_scheme(name)
+    st.session_state["scheme-pick"] = slug
+    st.session_state["scheme-name"] = ""
+    st.toast(f"Esquema “{name}” salvo.", icon=":material/check:")
+
+
+def update_scheme():
+    slug = st.session_state["scheme-pick"]
+    name = settings.list_schemes()[slug]
+    settings.save_scheme(name, slug)
+    st.toast(f"Esquema “{name}” atualizado com o visual atual.", icon=":material/check:")
+
+
+def delete_scheme():
+    slug = st.session_state["scheme-pick"]
+    name = settings.list_schemes()[slug]
+    settings.delete_scheme(slug)
+    st.session_state["scheme-pick"] = settings.DEFAULT_SCHEME
+    st.toast(f"Esquema “{name}” excluído.", icon=":material/check:")
+
+
+def schemes_editor():
+    names = {settings.DEFAULT_SCHEME: "Padrão (original)", **settings.list_schemes()}
+    if st.session_state.get("scheme-pick") not in names:  # esquema excluído em outra aba
+        st.session_state["scheme-pick"] = settings.DEFAULT_SCHEME
+    pick_col, actions_col = st.columns([2, 3], gap="medium", vertical_alignment="bottom")
+    pick_col.selectbox("Esquema", list(names), format_func=names.get, key="scheme-pick")
+    is_default = st.session_state["scheme-pick"] == settings.DEFAULT_SCHEME
+    with actions_col, st.container(horizontal=True):
+        st.button("Aplicar", icon=":material/check:", type="primary", on_click=apply_scheme,
+                  key="scheme-apply",
+                  help="Troca o visual atual (cores, aparência, frases, imagens e recortes) pelo do "
+                       "esquema. Salve o atual como esquema antes, se quiser voltar a ele.")
+        st.button("Atualizar com o visual atual", icon=":material/save:", on_click=update_scheme,
+                  key="scheme-update", disabled=is_default,
+                  help="Substitui o conteúdo do esquema escolhido pelo visual atual.")
+        with st.popover("Excluir", icon=":material/delete:", disabled=is_default):
+            st.html(f"<p>Excluir o esquema “{escape(names[st.session_state['scheme-pick']])}”? "
+                    "Não dá para desfazer.</p>")
+            st.button("Excluir de vez", type="primary", on_click=delete_scheme, key="scheme-delete")
+    name_col, save_col = st.columns([2, 3], gap="medium", vertical_alignment="bottom")
+    name_col.text_input("Nome do novo esquema", max_chars=40, key="scheme-name",
+                        placeholder="Ex.: Branco com cores de verão")
+    save_col.button("Salvar visual atual como novo esquema", icon=":material/bookmark_add:",
+                    on_click=save_new_scheme, key="scheme-save")
+    st.caption("O esquema guarda o que já está salvo: cores e frases editadas abaixo só entram depois "
+               "de clicar em Salvar. Os esquemas ficam só neste computador (pasta data/schemes).")
+
+
 def save_look(key):
     # Vale na hora: o callback roda antes da página, e o CSS de todas as páginas lê o que está salvo.
     data = settings.load()
@@ -279,6 +359,14 @@ st.html(f"""
 <div class="page-title">Configurações</div>
 <div class="page-subtitle">Aparência, cores do app e mensagens de cada nível de recuperação.
 Tudo fica salvo só no seu computador.</div>""")
+
+schemes = section("schemes", "Esquemas", ":material/bookmarks:",
+                  "Visuais salvos com nome, para trocar sem refazer tudo",
+                  "Um esquema guarda cores, aparência, frases, imagens e recortes. “Padrão (original)” "
+                  "é o visual de fábrica, que vem com o projeto; os seus ficam só neste computador.")
+if schemes.open:
+    with schemes:
+        schemes_editor()
 
 appearance = section("appearance", "Aparência", ":material/contrast:",
                      "Fundo da página e estilo dos quadrados, em todas as páginas",
