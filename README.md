@@ -14,11 +14,21 @@ Os dados são baixados da [API Polar AccessLink v3](https://www.polar.com/access
 
 O **Insight do dia** muda com o status do Nightly Recharge. Cada um dos 6 níveis tem título, conselho, cor e personagem próprios, e as setas ‹ › navegam entre as noites:
 
-| Recuperação muito boa (6/6) | Recuperação OK (4/6) | Recuperação muito ruim (1/6) |
-|---|---|---|
-| ![Resumo com recuperação muito boa](docs/screenshots/resumo-muito-boa.png) 
-| ![Resumo com recuperação OK](docs/screenshots/resumo-ok.png) 
-| ![Resumo com recuperação muito ruim](docs/screenshots/resumo-muito-ruim.png) |
+| Recuperação muito boa (6/6) | Recuperação OK (4/6) |
+|---|---|
+| ![Resumo com recuperação muito boa](docs/screenshots/resumo-muito-boa.png) | ![Resumo com recuperação OK](docs/screenshots/resumo-ok.png) |
+| **Recuperação comprometida (3/6)** | **Recuperação muito ruim (1/6)** |
+| ![Resumo com recuperação comprometida](docs/screenshots/resumo-comprometida.png) | ![Resumo com recuperação muito ruim](docs/screenshots/resumo-muito-ruim.png) |
+
+### Páginas de detalhe
+
+Cada cartão do Resumo abre uma página com a evolução no período, as tendências e os detalhes de uma noite ou dia:
+
+| Sono | Recuperação |
+|---|---|
+| ![Página de sono](docs/screenshots/sono.png) | ![Página de recuperação](docs/screenshots/recuperacao.png) |
+| **Frequência cardíaca** | **Atividade** |
+| ![Página de frequência cardíaca](docs/screenshots/frequencia-cardiaca.png) | ![Página de atividade](docs/screenshots/atividade.png) |
 
 ## Funcionalidades
 
@@ -35,6 +45,11 @@ O **Insight do dia** muda com o status do Nightly Recharge. Cada um dos 6 nívei
 | **Recuperação** | Status do Nightly Recharge, HRV, ANS charge, respiração e as medições da noite. |
 | **Frequência cardíaca** | FC média noturna, mínima e máxima por dia e FC contínua ao longo do dia. |
 | **Atividade** | Calorias (ativas e totais), passos, tempo ativo e alertas de inatividade. |
+
+**Configurações** (engrenagem no topo do Resumo)
+- **Cores:** troque a cor de cada grupo; ela vale para cartões, títulos e gráficos.
+- **Níveis de recuperação:** para cada um dos 6 níveis, edite o título, a frase do topo, o conselho, o personagem, o humor e a fala, e envie uma imagem própria (PNG, JPG ou WEBP). O formato do corte, a altura máxima e o enquadramento da imagem também são ajustáveis, com prévia.
+- **Restaurar padrão:** volta as cores, os textos ou a imagem de um nível ao original.
 
 **Em todas as páginas**
 - **Período:** 7 ou 28 dias, compartilhado entre as páginas.
@@ -111,11 +126,12 @@ app/                interface
   ui.py             identidade visual: cores, CSS e componentes HTML
   charts.py         leitura do banco e gráficos plotly
   insights.py       regras do Insight do dia e tradução dos códigos da Polar
-  views/            uma página por grupo (Resumo, Sono, Recuperação, FC, Atividade)
-  assets/recharge/  imagens dos níveis do Nightly Recharge (1.png ... 6.png)
+  settings.py       personalizações (cores, textos e imagens dos níveis)
+  views/            uma página por grupo (Resumo, Sono, Recuperação, FC, Atividade) e Configurações
+  assets/recharge/  imagens padrão dos níveis do Nightly Recharge (1.png ... 6.png)
 scripts/explore.py  diagnóstico: mostra só a estrutura das respostas da API
 tests/              testes com dados fictícios
-data/               banco, token e respostas brutas (fora do Git)
+data/               banco, token, personalizações e respostas brutas (fora do Git)
 ```
 
 ## Testes
@@ -124,12 +140,13 @@ data/               banco, token e respostas brutas (fora do Git)
 .\.venv\Scripts\python.exe -m unittest -v
 ```
 
-Os testes usam `unittest` (biblioteca padrão) e **dados fictícios**. Eles cobrem as regras do Insight, a montagem do hipnograma e as conversões da sincronização, como os horários que cruzam a meia-noite e as durações ISO 8601. Não chamam a API nem leem o banco.
+Os testes usam `unittest` (biblioteca padrão) e **dados fictícios**. Eles cobrem as regras do Insight, a montagem do hipnograma, a mescla das personalizações com os padrões e as conversões da sincronização, como os horários que cruzam a meia-noite e as durações ISO 8601. Não chamam a API nem leem o banco.
 
 ## Privacidade
 
 - **Credenciais:** o client ID, o secret e o token ficam no `.env` e em `data/`, e os dois estão no `.gitignore`.
 - **Dados de saúde:** ficam só em `data/polar.db`, no seu computador.
+- **Personalizações:** cores e textos ficam em `data/settings.json` e as imagens enviadas em `data/recharge/`, também fora do Git.
 - **Sem serviços externos:** o Insight do dia usa regras locais e nada é enviado a serviços de terceiros. As únicas conexões externas são a API da Polar e as fontes do Google Fonts.
 
 ## Problemas comuns
