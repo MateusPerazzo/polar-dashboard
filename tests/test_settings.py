@@ -6,7 +6,7 @@ import pandas as pd
 
 from app.insights import build_insight
 from app.settings import (DEFAULT_LOOK, apply_colors, apply_levels, apply_look, clamp_crop, crop_pixels,
-                          default_crop, fit_crop, is_valid_crop)
+                          default_crop, fit_crop, is_valid_crop, scheme_slug, snapshot, with_snapshot)
 
 GROUPS = {
     "sleep": {"title": "Sono", "color": "#111111"},
@@ -60,6 +60,23 @@ class ApplyLookTest(unittest.TestCase):
 
     def test_unknown_values_keep_defaults(self):
         self.assertEqual(apply_look({"background": "red", "cards": None}), DEFAULT_LOOK)
+
+
+class SchemeTest(unittest.TestCase):
+    def test_slug(self):
+        self.assertEqual(scheme_slug("Verão Claro!"), "verao-claro")
+        self.assertEqual(scheme_slug("  Padrão  "), "padrao")
+        self.assertEqual(scheme_slug("!!!"), "")
+
+    def test_snapshot_keeps_only_the_look(self):
+        data = {"colors": {"sleep": "#ff0000"}, "cards": "solid", "outra": 1}
+        self.assertEqual(snapshot(data), {"colors": {"sleep": "#ff0000"}, "cards": "solid"})
+
+    def test_with_snapshot_replaces_the_whole_look(self):
+        data = {"colors": {"sleep": "#ff0000"}, "levels": {"1": {"headline": "x"}}, "outra": 1}
+        scheme = {"name": "Teste", "background": "light"}
+        # Cores e frases saem (o esquema não as tem: voltam ao padrão); "outra" e o fundo ficam.
+        self.assertEqual(with_snapshot(data, scheme), {"outra": 1, "background": "light"})
 
 
 class CropTest(unittest.TestCase):
