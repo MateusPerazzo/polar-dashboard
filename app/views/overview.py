@@ -290,7 +290,7 @@ with left:
     card("sleep",
          "Nota de 1 a 100 da noite, calculada pela Polar a partir da "
          "duração, da continuidade e da parte regeneradora do sono.",
-         "Nota do sono", sleep, "sleep_score", "/100", " pontos", "up", window,
+         "Nota do sono", sleep, "sleep_score", "/100", (" ponto", " pontos"), "up", window,
          until=night, ring_total=100)
     card("heart-rate",
          "FC média nas primeiras horas de sono, uma boa aproximação da sua FC de "

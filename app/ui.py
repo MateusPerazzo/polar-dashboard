@@ -371,17 +371,26 @@ def format_duration(seconds):
 
 
 def pill(delta, unit, direction):
-    """direction: "up" (subir é bom), "down" (descer é bom) ou "off" (neutro)."""
+    """direction: "up" (subir é bom), "down" (descer é bom) ou "off" (neutro).
+    unit: texto (" bpm") ou par (singular, plural), como (" ponto", " pontos")."""
     if delta is None or pd.isna(delta):
         return ""
-    arrow = "↑" if delta >= 0 else "↓"
-    if direction == "off" or round(delta) == 0:
+    # Seta, cor e unidade seguem o número que aparece na pílula, não o valor bruto:
+    # 0,4 vira "0 bpm", cinza e sem seta.
+    shown = abs(round(delta))
+    if isinstance(unit, tuple):
+        unit = unit[0] if shown == 1 else unit[1]
+    if shown == 0:
+        arrow = ""
+    else:
+        arrow = "↑ " if delta > 0 else "↓ "
+    if direction == "off" or shown == 0:
         tone = "neutral"
     elif (delta > 0) == (direction == "up"):
         tone = "good"
     else:
         tone = "bad"
-    return f'<span class="pill pill-{tone}">{arrow} {format_number(abs(delta))}{unit}</span>'
+    return f'<span class="pill pill-{tone}">{arrow}{format_number(shown)}{unit}</span>'
 
 
 def ring(fraction, color, center, caption="", size=150, stroke=12):
