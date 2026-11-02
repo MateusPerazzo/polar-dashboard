@@ -27,6 +27,16 @@ def duration_seconds(text):
     return int(hours * 3600 + minutes * 60 + seconds)
 
 
+def continuous_hr_rows(day_data):
+    # A Polar manda 0 quando não houve leitura (pulseira sem contato): não é medição, não grava.
+    day = day_data["date"]
+    return [
+        (day, f"{day}T{sample['sample_time']}", sample["heart_rate"])
+        for sample in day_data.get("heart_rate_samples", [])
+        if sample.get("heart_rate")
+    ]
+
+
 def sync_sleep(conn):
     nights = (polar_api.get("/v3/users/sleep") or {}).get("nights", [])
     starts = {}
@@ -92,12 +102,7 @@ def sync_continuous_hr(conn):
         ) or {}
         with conn:
             for day_data in data.get("heart_rates", []):
-                day = day_data["date"]
-                rows = [
-                    (day, f"{day}T{sample['sample_time']}", sample["heart_rate"])
-                    for sample in day_data.get("heart_rate_samples", [])
-                ]
-                db.replace_series(conn, "heart_rate", day, rows)
+                db.replace_series(conn, "heart_rate", day_data["date"], continuous_hr_rows(day_data))
                 total_days += 1
         start = chunk_end + timedelta(days=1)
     print(f"fc contínua: {total_days} dias")

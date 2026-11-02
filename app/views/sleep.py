@@ -32,8 +32,14 @@ def hypnogram_figure(segments):
                                   " (%{customdata[2]:.0f} min)<extra></extra>",
         )
     charts.style(fig, height=280)
-    fig.update_layout(barmode="overlay", bargap=0.15, barcornerradius=2, hovermode="closest")
-    fig.update_yaxes(categoryorder="array", categoryarray=STAGE_ORDER, showgrid=False)
+    # Legenda um pouco mais alta que o padrão (1.02): a faixa "Acordado" encosta no topo da área.
+    fig.update_layout(barmode="overlay", bargap=0.15, barcornerradius=2, hovermode="closest",
+                      legend=dict(y=1.06))
+    # Quadradinho na cor do estágio antes do nome; o nome fica na cor do eixo (contraste nos dois fundos).
+    fig.update_yaxes(categoryorder="array", categoryarray=STAGE_ORDER, showgrid=False,
+                     tickvals=STAGE_ORDER,
+                     ticktext=[f'<span style="color:{ui.SLEEP_STAGES[stage]}">■</span> {stage}'
+                               for stage in STAGE_ORDER])
     fig.update_xaxes(type="date", tickformat="%H:%M")
     return fig
 
