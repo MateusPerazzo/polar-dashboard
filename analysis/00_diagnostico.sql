@@ -32,3 +32,29 @@ SELECT date              AS data_noite,
 FROM sleep
 WHERE substr(sleep_start_time, 1, 10) <> substr(sleep_end_time, 1, 10)
 ORDER BY date;
+
+-- 4. O que é o sleep_charge?
+-- É a nota que a Polar dá comparando o sono da noite com o meu normal
+-- (média dos últimos ~28 dias), numa escala de 1 a 5.
+-- A média do sleep_score sobe junto com o grupo (55 -> 62 -> 67 -> 74 -> 78)
+-- e as faixas quase não se misturam (só 1/2 e 4/5 se encostam). Com só
+-- um mês de dados, meu "normal" quase não mudou, então por enquanto ele é
+-- praticamente o sleep_score dividido em faixas. Fica fora da gold.
+SELECT sleep_charge,
+       COUNT(*) AS noites,
+       round(avg(sleep_score),1) AS nota_media,
+       max(sleep_score) AS melhor_sono,
+       min(sleep_score) AS pior_sono
+FROM sleep
+GROUP BY sleep_charge
+ORDER BY sleep_charge;
+
+-- 5. O total de interrupções é a soma das curtas com as longas?
+-- Sim: as 33 noites aparecem no filtro. Então o total não traz informação
+-- nova, e vou levar só ele para a gold. Valores em segundos.
+SELECT date as data,
+    total_interruption_duration as tempo_acordado,
+    short_interruption_duration as tempo_curto,
+    long_interruption_duration  as tempo_longo
+FROM sleep
+WHERE (short_interruption_duration+long_interruption_duration)=total_interruption_duration;
