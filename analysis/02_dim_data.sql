@@ -15,7 +15,7 @@
 --
 -- Por enquanto é só o SELECT. Depois vira view com CREATE VIEW.
 
-WITH RECURSIVE calendario(dia) AS ( --Cria minha CTE
+WITH RECURSIVE calendario(dia) AS (
     SELECT (SELECT (min(date)) FROM daily_activity) AS dia    
     UNION ALL
     SELECT date(dia,'+1 day')                  
