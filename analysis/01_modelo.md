@@ -82,14 +82,14 @@ batem (conferi com LEFT JOIN nos dois sentidos), mas uma noite curta ou um
 atraso na sincronização pode deixar o sono sem Recharge. Com LEFT JOIN a
 noite continua lá, só com o Recharge vazio; com JOIN comum ela sumiria.
 
-| coluna | origem | tipo |
-|---|---|---|
-| `date` | sleep | chave |
-| `sleep_start_time` | sleep | base da hora de deitar |
-| `sleep_score` | sleep | medida |
-| `nightly_recharge_status` | nightly_recharge | medida (ordinal) |
-| `ans_charge` | nightly_recharge | medida |
-| `heart_rate_variability_avg` | nightly_recharge | medida |
+| coluna                       | origem           | tipo                   |
+|------------------------------|------------------|------------------------|
+| `date`                       | sleep            | chave                  |
+| `sleep_start_time`           | sleep            | base da hora de deitar |
+| `sleep_score`                | sleep            | medida                 |
+| `nightly_recharge_status`    | nightly_recharge | medida (ordinal)       |
+| `ans_charge`                 | nightly_recharge | medida                 |
+| `heart_rate_variability_avg` | nightly_recharge | medida                 |
 
 Levo o `sleep_start_time` inteiro; as faixas de horário decido na análise.
 
