@@ -34,8 +34,7 @@ WHERE substr(sleep_start_time, 1, 10) <> substr(sleep_end_time, 1, 10)
 ORDER BY date;
 
 -- 4. O que é o sleep_charge?
--- É a nota que a Polar dá comparando o sono da noite com o meu normal
--- (média dos últimos ~28 dias), numa escala de 1 a 5.
+-- É a nota que a Polar dá comparando o sono da noite com o meu normal (média dos últimos ~28 dias), numa escala de 1 a 5.
 -- A média do sleep_score sobe junto com o grupo (55 -> 62 -> 67 -> 74 -> 78)
 -- e as faixas quase não se misturam (só 1/2 e 4/5 se encostam). Com só
 -- um mês de dados, meu "normal" quase não mudou, então por enquanto ele é
