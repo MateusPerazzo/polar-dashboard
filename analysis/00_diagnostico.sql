@@ -2,8 +2,10 @@
 
 -- 1. Quanto dado eu tenho
 -- 32 noites (sono e recharge) e 34 dias de atividade, de 01/10 a 03/11.
--- Faltam 2 noites (27/10 e 31/10). Pouco dado ainda, então as análises
--- vão ser mais exploratórias.
+-- Faltam 2 noites (27/10 e 31/10): nas duas eu esqueci de colocar a
+-- pulseira para dormir (a de 31/10 foi depois da festa de Halloween, que
+-- acabou às 5h). Pouco dado ainda, então as análises vão ser mais
+-- exploratórias.
 SELECT 'sleep' AS tabela, MIN(date) AS primeira, MAX(date) AS ultima, COUNT(*) AS linhas FROM sleep
 UNION ALL
 SELECT 'nightly_recharge', MIN(date), MAX(date), COUNT(*) FROM nightly_recharge
@@ -57,3 +59,44 @@ SELECT date as data,
     long_interruption_duration  as tempo_longo
 FROM sleep
 WHERE (short_interruption_duration+long_interruption_duration)=total_interruption_duration;
+
+-- 6. As datas das tabelas batem?
+-- Ter o mesmo número de linhas não prova que as datas são as mesmas, então
+-- conferi com LEFT JOIN. Sono e Recharge batem nos dois sentidos (as duas
+-- consultas voltam vazias). Por isso a fato_noite junta as duas, com
+-- LEFT JOIN a partir do sleep. Na atividade, os dias sem noite são só
+-- 27/10 e 31/10, as noites em que esqueci a pulseira.
+SELECT sono.date AS data_sono, recuperacao.date AS data_recarga
+FROM sleep AS sono
+LEFT JOIN nightly_recharge AS recuperacao ON sono.date = recuperacao.date
+WHERE recuperacao.date IS NULL;
+
+SELECT sono.date AS data_sono, recuperacao.date AS data_recarga
+FROM nightly_recharge AS recuperacao
+LEFT JOIN sleep AS sono ON recuperacao.date = sono.date
+WHERE sono.date IS NULL;
+
+SELECT atv.date AS data_atividade, sono.date AS data_sono
+FROM daily_activity as atv
+LEFT JOIN sleep as sono ON atv.date=sono.date
+WHERE sono.date is NULL;
+
+-- 7. Dias atípicos no tempo ativo
+-- O tempo ativo conta qualquer movimento do dia, não só treino (média de
+-- ~5,6 h, de 1,4 h a 10,3 h). Olhei os 5 maiores e os 5 menores:
+--   31/10  10,3 h: real, passei o dia limpando a casa depois da festa. Fica.
+--   11/10   1,4 h: fiquei sem a pulseira boa parte do dia (sítio). O dado
+--          está incompleto, então esse dia sai das análises de atividade.
+--   08/11   2,8 h: só um domingo parado mesmo. Fica.
+-- Cuidado: se o sync for no meio do dia, o último dia vem incompleto.
+SELECT dia,
+       ROUND(tempo_ativo_s / 3600.0, 1) AS horas_ativas
+FROM fato_dia
+ORDER BY horas_ativas DESC
+LIMIT 5;
+
+SELECT dia,
+       ROUND(tempo_ativo_s / 3600.0, 1) AS horas_ativas
+FROM fato_dia
+ORDER BY horas_ativas
+LIMIT 5;
