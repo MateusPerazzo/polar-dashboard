@@ -16,10 +16,10 @@ from polar import db, sync
 # Uma cor por grupo, usada em todo o app (cartões, páginas e gráficos).
 # São os padrões; as páginas leem por groups(), que aplica as cores personalizadas.
 GROUPS = {
-    "sleep": {"title": "Sono", "color": "#eda100", "icon": "bedtime", "page": "app/views/sleep.py"},
+    "sleep": {"title": "Sono", "color": "#3987e5", "icon": "bedtime", "page": "app/views/sleep.py"},
     "recovery": {"title": "Recuperação", "color": "#199e70", "icon": "monitor_heart", "page": "app/views/recovery.py"},
     "heart-rate": {"title": "Frequência cardíaca", "color": "#e66767", "icon": "favorite", "page": "app/views/heart_rate.py"},
-    "activity": {"title": "Atividade", "color": "#3987e5", "icon": "local_fire_department", "page": "app/views/activity.py"},
+    "activity": {"title": "Atividade", "color": "#eda100", "icon": "local_fire_department", "page": "app/views/activity.py"},
 }
 # Séries categóricas (slots 1-3 da paleta de referência, validados para daltonismo).
 SERIES = ["#3987e5", "#d95926", "#199e70"]
