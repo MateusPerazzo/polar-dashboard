@@ -43,7 +43,7 @@ sendo um número menor. Tenho que tratar isso ao montar as faixas.
 | coluna                           | tabela de origem | tipo     |
 |----------------------------------|------------------|----------|
 | `heart_rate_variability_avg`     | nightly_recharge | medida   |
-| data (com media movel de 7 dias) | dim_data         | atributo |
+| data (com média móvel de 7 dias) | dim_data         | atributo |
 
 Uso o HRV já resumido por noite, e não a série da `recharge_hrv`, que tem
 várias medições por noite.
@@ -68,7 +68,7 @@ várias medições por noite.
 | `date`                  | 2026-10-07 | chave, liga com as tabelas de fato                |
 | número do dia da semana | 3          | ordenar (segunda = 1 ... domingo = 7, padrão ISO) |
 | nome do dia da semana   | quarta     | ler o resultado                                   |
-| mês                     | 2026-10    | agrupar no longo prazo                            | 
+| mês                     | 2026-10    | agrupar no longo prazo                            |
 
 Tirei o "fim de semana": dá para calcular a partir do dia da semana se
 precisar. Também não criei uma coluna de semana: para a evolução do HRV,
@@ -82,16 +82,20 @@ batem (conferi com LEFT JOIN nos dois sentidos), mas uma noite curta ou um
 atraso na sincronização pode deixar o sono sem Recharge. Com LEFT JOIN a
 noite continua lá, só com o Recharge vazio; com JOIN comum ela sumiria.
 
-| coluna                       | origem           | tipo                   |
-|------------------------------|------------------|------------------------|
-| `date`                       | sleep            | chave                  |
-| `sleep_start_time`           | sleep            | base da hora de deitar |
-| `sleep_score`                | sleep            | medida                 |
-| `nightly_recharge_status`    | nightly_recharge | medida (ordinal)       |
-| `ans_charge`                 | nightly_recharge | medida                 |
-| `heart_rate_variability_avg` | nightly_recharge | medida                 |
+| coluna                       | origem                   | tipo                    |
+|------------------------------|--------------------------|-------------------------|
+| `date`                       | sleep                    | chave                   |
+| `sleep_score`                | sleep                    | medida                  |
+| `nightly_recharge_status`    | nightly_recharge         | medida (ordinal)        |
+| `ans_charge`                 | nightly_recharge         | medida                  |
+| `heart_rate_variability_avg` | nightly_recharge         | medida                  |
+| `sleep_start_time`           | sleep                    | base da hora de deitar  |
+| `sleep_end_time`             | sleep                    | base da hora de acordar |
+| horas na cama                | calculada (fim − início) | medida                  |
 
 Levo o `sleep_start_time` inteiro; as faixas de horário decido na análise.
+O horário de acordar e as horas na cama entraram na análise 2, para testar
+se as noites de quinta eram mais curtas (eram: na sexta acordo às 6h).
 
 ### fato_dia (uma linha por dia)
 
