@@ -24,18 +24,33 @@
 -- quinta (sem a primeira aula) me deixam acordar mais tarde, mas na sexta
 -- tenho todas as aulas e cerca de 1 hora de deslocamento.
 --
--- Testei duas previsões:
+-- Testei três previsões:
 --   1. "Na quinta eu vou dormir mais tarde": NÃO se confirmou. Foi o
 --      contrário: nas quintas eu durmo mais cedo e com mais regularidade
 --      (sempre entre 23h45 e 00h27) do que nas terças e quartas.
 --   2. "Na sexta eu acordo mais cedo": confirmou. Nas 6 sextas acordei
 --      entre 05h56 e 06h10, e as noites ficaram com 5,7 a 6,2 h na cama.
---      Nas manhãs de quarta acordei em média ~08h30 (7,5 h na cama).
+--      Nas manhãs de quarta acordei em média ~08h30 e nas de quinta
+--      ~07h30.
+--   3. "O problema é acordar às 6h": NÃO se confirmou. Nas segundas
+--      normais (sem contar os feriados de 12/10 e 02/11) eu também acordo
+--      às 6h, com ainda menos horas na cama (5,6 h em média), e a nota é
+--      melhor (66, contra 60 da noite de quinta). E no domingo eu não vou
+--      dormir mais cedo: fui dormir entre 23h24 e 01h06, mais tarde que
+--      nas quintas. Nas terças o horário de acordar varia; duas das que
+--      fugiram das 6h vieram logo depois dos feriados.
 --
--- Conclusão: a noite de quinta é a pior não porque eu durmo mais tarde (eu
--- até durmo mais cedo), e sim porque acordo muito mais cedo na sexta, e o
--- pouco que adianto não compensa. Vou testar ir dormir uma hora mais cedo
--- nas quintas e ver se a nota melhora.
+-- Conclusão: a noite de quinta continua sendo a pior, mas nem acordar às
+-- 6h nem dormir pouco explicam isso sozinhos, porque a noite de domingo
+-- tem as duas coisas e vai melhor. A causa ainda está em aberto. Tenho
+-- duas hipóteses:
+--   - a mudança de horário: na quarta e na quinta acordo mais tarde, e
+--     na sexta preciso voltar para as 6h;
+--   - o cansaço acumulado: a quinta é o fim de uma semana de aulas, e a
+--     noite de domingo vem depois de um fim de semana de noites longas.
+-- Com 6 quintas e 4 segundas normais, não dá para separar uma da outra.
+-- Vou testar ir dormir uma hora mais cedo nas quintas e ver se a nota
+-- melhora.
 -- Também apareceu que mais horas não garantem a melhor nota: o sábado tem
 -- a noite mais longa (9,3 h), mas nota menor que a de terça. Talvez a
 -- regularidade do horário importe também, o que combina com a hipótese da
@@ -84,4 +99,21 @@ SELECT d.dia_semana                              AS manha,
 FROM sleep AS s
 JOIN dim_data AS d ON d.dia = s.date
 WHERE d.numero_dia IN (3, 4, 5)  
+ORDER BY d.numero_dia, s.date;
+
+
+-- Teste 3: o problema é acordar às 6h?
+-- Mostra as manhãs de segunda a sexta lado a lado. Na segunda eu também
+-- acordo às 6h; comparo essas noites com as de quinta para sexta.
+-- (como no teste 2, o dia da semana é o da manhã em que ACORDEI)
+SELECT d.dia_semana                              AS manha,
+       s.date                                    AS dia_acordou,
+       substr(s.sleep_start_time, 12, 5)         AS dormiu,
+       substr(s.sleep_end_time, 12, 5)           AS acordou,
+       ROUND((julianday(s.sleep_end_time)
+            - julianday(s.sleep_start_time)) * 24, 1) AS horas_na_cama,
+       s.sleep_score                             AS nota_sono
+FROM sleep AS s
+JOIN dim_data AS d ON d.dia = s.date
+WHERE d.numero_dia IN (1, 2, 3, 4, 5)   -- manhãs de segunda a sexta
 ORDER BY d.numero_dia, s.date;

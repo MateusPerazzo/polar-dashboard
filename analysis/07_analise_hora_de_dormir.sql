@@ -50,7 +50,7 @@
 -- CONCLUSÃO
 -- O horário em que vou dormir, sozinho, não decide como eu me recupero.
 -- O que parece pesar mais é:
---   1. o horário em que preciso acordar, e se ele combina com a minha
+--   1. a mudança no horário de acordar, e se ele combina com a minha
 --      rotina;
 --   2. a falta de rotina nas noites de sexta e sábado.
 -- Isso combina com o que apareceu nas análises 1 e 2. Mas ainda são
