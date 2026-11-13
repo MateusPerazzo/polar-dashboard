@@ -10,6 +10,20 @@ Os dados são baixados da [API Polar AccessLink v3](https://www.polar.com/access
 
 > Projeto pessoal de estudo, sem afiliação com a Polar Electro.
 
+## Análise dos dados
+
+Além do dashboard, usei os dados para estudar modelagem e análise com
+SQL: organizei tudo em camadas (arquitetura medalhão), montei um
+**modelo estrela** e fiz 4 análises sobre o meu sono e a minha
+recuperação, com hipóteses, testes e limitações.
+
+**A principal descoberta:** a regularidade da rotina parece pesar mais
+do que fatores isolados, como se mexer mais ou dormir cedo. Nas noites
+de sexta e sábado, sem rotina, a recuperação foi ruim em qualquer
+horário (entre -3,6 e -9,8, numa escala de -10 a +10).
+
+👉 [Veja as análises completas](analysis/README.md)
+
 ## Telas
 
 O **Insight do dia** muda com o status do Nightly Recharge. Cada um dos 6 níveis tem título, conselho, cor e personagem próprios, e as setas ‹ › navegam entre as noites:
