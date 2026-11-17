@@ -49,8 +49,54 @@ FROM analise4;
 
 
 -- Atividade x sono: um ponto por dia (vem da análise 1, 05_analise_atividade_sono.sql)
--- (a escrever)
+     DROP VIEW IF EXISTS atividade_sono_dia;
+
+    CREATE VIEW atividade_sono_dia as
+    SELECT fd.dia,
+        passos,
+        ROUND((tempo_ativo_s/3600.0), 1) as tempo_ativo_h,
+        fn.nota_sono
+    FROM fato_dia as fd
+    LEFT JOIN fato_noite as fn ON fn.dia=date(fd.dia,'+1 day')
+    WHERE (fd.dia<>'2026-10-11') AND (fn.dia is NOT NULL);
+
+
+
 
 
 -- Hora de dormir x recuperação: com e sem sexta e sábado (vem da análise 3, 07_analise_hora_de_dormir.sql)
--- (a escrever)
+-- Uma linha por faixa de horário, com a recuperação do sistema nervoso
+-- de todas as noites e sem as noites de sexta e sábado (sem rotina).
+DROP VIEW IF EXISTS hora_dormir_recuperacao;
+
+CREATE VIEW hora_dormir_recuperacao AS
+WITH analise3 AS (
+    SELECT dia,
+        recuperacao_sistema_nervoso,
+        CASE
+        WHEN (substr(inicio_sono,12,2)*60+substr(inicio_sono,15,2))<600 THEN (substr(inicio_sono,12,2)*60+substr(inicio_sono,15,2)+1440)
+        ELSE (substr(inicio_sono,12,2)*60+substr(inicio_sono,15,2))
+        END AS minutos_dormir
+    FROM fato_noite
+),
+analise4 AS (
+    SELECT a.dia,
+        a.recuperacao_sistema_nervoso,
+        a.minutos_dormir,
+        d.numero_dia,
+        CASE
+        WHEN a.minutos_dormir<1465 THEN 'cedo(antes das 00h25)'
+        WHEN a.minutos_dormir<1525 THEN 'médio(00h25-01h24)'
+        ELSE 'tarde(01h25 ou mais)'
+        END AS zona_dormiu
+    FROM analise3 AS a
+    LEFT JOIN dim_data AS d ON a.dia = date(d.dia, '+1 day')
+)
+SELECT zona_dormiu,
+    MIN(minutos_dormir) AS minutos_inicio,
+    COUNT(*) AS noites_todas,
+    ROUND(AVG(recuperacao_sistema_nervoso), 1) AS media_todas,
+    COUNT(CASE WHEN numero_dia NOT IN (5, 6) THEN 1 END) AS noites_sem_sex_sab,
+    ROUND(AVG(CASE WHEN numero_dia NOT IN (5, 6) THEN recuperacao_sistema_nervoso END), 1) AS media_sem_sex_sab
+FROM analise4
+GROUP BY zona_dormiu;
