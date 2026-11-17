@@ -69,8 +69,13 @@ SELECT d.numero_dia,
        COUNT(fn.dia) AS noites_registradas,
        ROUND(AVG(fn.nota_sono), 1) AS nota_media,
        round(AVG(fn.horas_na_cama),1) as media_horas_na_cama
+-- Período do estudo publicado; para uma nova versão, mudar as datas aqui.
+-- O limite da noite fica no ON, e não no WHERE: no WHERE, os dias sem
+-- noite (fn.dia vazio) seriam apagados e o calendário perderia dias.
 FROM dim_data AS d
 LEFT JOIN fato_noite AS fn ON fn.dia = date(d.dia, '+1 day')
+    AND fn.dia <= '2026-11-10'
+WHERE d.dia BETWEEN '2026-10-01' AND '2026-11-10'
 GROUP BY d.numero_dia, d.dia_semana;
 
 

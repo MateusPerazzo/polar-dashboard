@@ -38,6 +38,10 @@ WITH analise4 AS (
         AVG(hrv_medio) OVER (ORDER BY dia ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS media_movel,
         COUNT(*) OVER (ORDER BY dia ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS contagem
     FROM fato_noite
+    -- Período do estudo publicado; para uma nova versão, mudar as datas aqui.
+    -- Dentro da CTE: o WHERE roda antes da janela (OVER), então a média
+    -- móvel só usa noites do período.
+    WHERE dia BETWEEN '2026-10-01' AND '2026-11-10'
 )
 SELECT dia,
     hrv_medio,
@@ -58,7 +62,10 @@ FROM analise4;
         fn.nota_sono
     FROM fato_dia as fd
     LEFT JOIN fato_noite as fn ON fn.dia=date(fd.dia,'+1 day')
-    WHERE (fd.dia<>'2026-10-11') AND (fn.dia is NOT NULL);
+    -- Período do estudo publicado; para uma nova versão, mudar as datas aqui.
+    -- Pela noite seguinte (fn.dia): o último dia é 09/11, cuja noite é a de 10/11.
+    WHERE (fd.dia<>'2026-10-11') AND (fn.dia is NOT NULL)
+        AND fn.dia BETWEEN '2026-10-01' AND '2026-11-10';
 
 
 
@@ -78,6 +85,8 @@ WITH analise3 AS (
         ELSE (substr(inicio_sono,12,2)*60+substr(inicio_sono,15,2))
         END AS minutos_dormir
     FROM fato_noite
+    -- Período do estudo publicado; para uma nova versão, mudar as datas aqui.
+    WHERE dia BETWEEN '2026-10-01' AND '2026-11-10'
 ),
 analise4 AS (
     SELECT a.dia,
