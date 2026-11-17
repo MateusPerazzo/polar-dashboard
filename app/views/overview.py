@@ -364,3 +364,8 @@ with right:
          "e movimento.",
          "Calorias · dia anterior", activity, "calories", " kcal", " kcal", "off",
          window, until=activity_day)
+
+# Link discreto para os resultados do estudo em SQL (pasta analysis/).
+with st.container(key="analyses-link"):
+    st.page_link("app/views/analyses.py", label="Ver as análises dos meus dados",
+                 icon=":material/insights:")

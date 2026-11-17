@@ -10,6 +10,7 @@ pages = [
     st.Page("app/views/recovery.py", title="Recuperação"),
     st.Page("app/views/heart_rate.py", title="Frequência cardíaca"),
     st.Page("app/views/activity.py", title="Atividade"),
+    st.Page("app/views/analyses.py", title="Análises"),
     st.Page("app/views/settings.py", title="Configurações"),
 ]
 current = st.navigation(pages, position="hidden")

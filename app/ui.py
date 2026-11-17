@@ -146,6 +146,11 @@ header[data-testid="stHeader"] { background: transparent; }
 .panel-head { display: flex; align-items: center; gap: 8px; }
 .panel-title { font-family: var(--display); font-size: 1.15rem; font-weight: 700; }
 .panel-subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+/* Página Análises: a conclusão curta embaixo de cada gráfico. */
+.analysis-note { color: var(--muted); font-size: 0.85rem; margin: 0; line-height: 1.45; }
+/* Link discreto para a página Análises, embaixo da grade do Resumo. */
+.st-key-analyses-link a, .st-key-analyses-link a * { color: var(--muted); font-size: 0.85rem; }
+.st-key-analyses-link a:hover, .st-key-analyses-link a:hover * { color: var(--ink); }
 
 /* Destaque (hero) */
 .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
