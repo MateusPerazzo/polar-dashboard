@@ -8,13 +8,36 @@ da semana) no DB Browser.
 import plotly.graph_objects as go
 import streamlit as st
 
-from app import charts, ui
+from app import charts, settings, ui
 
 GROUPS = ui.groups()
 SLEEP = GROUPS["sleep"]["color"]
+# Vermelho de "pior" (o mesmo --bad das pílulas), ajustado ao fundo; o plotly não lê variáveis CSS.
+WORST = "#b52828" if settings.is_light() else ui.TONES["bad"]
 RECOVERY = GROUPS["recovery"]["color"]
 ACTIVITY = GROUPS["activity"]["color"]
 STUDY = "Estudo de 01/10 a 10/11/2026"
+# Altura dos 4 gráficos: calculada para a página inteira caber numa tela de 1920×950 (um print).
+CHART_HEIGHT = 184
+
+# Só nesta página: conteúdo mais largo (as notas e o subtítulo ocupam menos linhas e sobra altura
+# para os gráficos) e painéis com menos respiro, para a página caber numa tela sem rolagem.
+CSS = """
+<style>
+.block-container { max-width: 1640px; }
+[class*="st-key-panel-analyses-"] { padding: 16px 20px; gap: 8px; }
+/* Painéis da mesma linha com a mesma altura (a do mais alto), como a grade do Resumo: as colunas
+   esticam e o bloco de cada coluna vira grid de uma linha 1fr, que o painel preenche. */
+[class*="st-key-row-analyses-"] [data-testid="stHorizontalBlock"] { align-items: stretch !important; }
+[class*="st-key-row-analyses-"] [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+    display: grid; grid-auto-rows: 1fr; height: 100%;
+}
+/* Título do painel e seletor Passos / Tempo ativo na mesma linha (sem quebrar; o !important
+   vence o flex-wrap que o Streamlit põe no container horizontal). */
+.st-key-analyses-activity-head { flex-wrap: nowrap !important; }
+.st-key-analyses-activity-head > div:first-child { flex: 1 1 auto; min-width: 0; }
+</style>
+"""
 
 
 def read_view(query, dates=()):
@@ -40,19 +63,19 @@ def band_label(label):
 
 
 def weekday_chart(df):
-    """Barras por noite da semana, com a quinta em destaque."""
+    """Barras por noite da semana, com a quinta (a pior) em vermelho."""
     df = df.sort_values("numero_dia")
-    highlight = df["numero_dia"] == 4
+    worst = df["numero_dia"] == 4
     fig = go.Figure(go.Bar(
         x=df["dia_semana"], y=df["nota_media"],
-        marker=dict(color=[SLEEP if h else charts.rgba(SLEEP, 0.35) for h in highlight]),
+        marker=dict(color=[WORST if w else charts.rgba(SLEEP, 0.35) for w in worst]),
         text=[ui.format_number(v, 1) for v in df["nota_media"]], textposition="outside",
         customdata=df[["noites_registradas", "media_horas_na_cama"]],
         hovertemplate="Noite de %{x}: nota %{y:.1f}<br>%{customdata[0]} noites, "
                       "%{customdata[1]:.1f} h na cama<extra></extra>",
         showlegend=False,
     ))
-    charts.style(fig, height=300)
+    charts.style(fig, height=CHART_HEIGHT)
     fig.update_layout(hovermode="closest")
     fig.update_yaxes(range=[0, df["nota_media"].max() * 1.18])
     return fig
@@ -69,11 +92,12 @@ def bedtime_chart(df):
     ]:
         fig.add_bar(
             x=x, y=df[column], name=name, marker=dict(color=color),
-            text=[f"{signed(v)}<br>{n} noites" for v, n in zip(df[column], df[count])],
+            # Numa linha só: com o gráfico baixo, duas linhas passavam do topo e das faixas.
+            text=[f"{signed(v)} · {n} noites" for v, n in zip(df[column], df[count])],
             textposition="outside",
             hovertemplate=f"{name}: %{{y:+.1f}}<extra></extra>",
         )
-    charts.style(fig, height=300)
+    charts.style(fig, height=CHART_HEIGHT)
     low = min(df["media_todas"].min(), df["media_sem_sex_sab"].min(), 0)
     high = max(df["media_todas"].max(), df["media_sem_sex_sab"].max(), 0)
     pad = max(high - low, 1) * 0.35
@@ -93,9 +117,7 @@ def activity_chart(df, column, unit):
         hovertemplate=f"%{{customdata}}: %{{x}} {unit}<br>Nota da noite seguinte: %{{y}}<extra></extra>",
         showlegend=False,
     ))
-    # Mais baixo que os outros: o seletor Passos / Tempo ativo ocupa o resto do painel,
-    # e assim os dois painéis de baixo ficam com a mesma altura.
-    charts.style(fig, height=256)
+    charts.style(fig, height=CHART_HEIGHT)
     fig.update_layout(hovermode="closest")
     fig.update_xaxes(showgrid=True, gridcolor=charts.chart_colors()["grid"], griddash="dot")
     return fig
@@ -110,7 +132,7 @@ def hrv_chart(df):
     fig.add_scatter(x=df["dia"], y=df["media_movel"], mode="lines", name="Média de 7 noites",
                     line=dict(color=RECOVERY, width=3),
                     hovertemplate="Média de 7 noites: %{y:.1f} ms<extra></extra>")
-    charts.style(fig, height=300)
+    charts.style(fig, height=CHART_HEIGHT)
     return charts.daily_ticks(fig, df["dia"])
 
 
@@ -119,6 +141,7 @@ def conclusion_note(text):
 
 
 ui.set_accent(SLEEP)
+st.html(CSS)
 st.html(f"""
 <div class="eyebrow">{ui.icon('insights')} Estudo em SQL</div>
 <div class="page-title">Análises</div>
@@ -169,18 +192,24 @@ with st.container(key="row-analyses-bottom"):
 
 with activity_col:
     with st.container(border=True, key="panel-analyses-activity"):
-        ui.panel_title(
-            "Se mexer mais melhora o sono?", "Cada ponto é um dia e a nota da noite seguinte",
-            "A atividade de cada dia e a nota do sono da noite seguinte. Se houvesse relação, "
-            "os pontos formariam uma diagonal. O 11/10 (boa parte do dia sem a pulseira) fica "
-            "de fora. View atividade_sono_dia, da análise 1.",
-        )
+        # Cabeçalho em linha: título à esquerda e, se houver dados, o seletor à direita.
+        # O container é criado antes e recebe o seletor depois de ler a view.
+        head = st.container(horizontal=True, vertical_alignment="top", key="analyses-activity-head")
+        with head:
+            ui.panel_title(
+                "Se mover mais melhora o sono?", "Cada ponto é um dia e a nota da noite seguinte",
+                "A atividade de cada dia e a nota do sono da noite seguinte. Se houvesse relação, "
+                "os pontos formariam uma diagonal. O 11/10 (boa parte do dia sem a pulseira) fica "
+                "de fora. View atividade_sono_dia, da análise 1.",
+            )
         activity = read_view("SELECT * FROM atividade_sono_dia", dates=["dia"])
         if activity is not None:
-            measure = st.segmented_control(
-                "Medida", ["Passos", "Tempo ativo"], default="Passos",
-                key="analyses-activity-measure", label_visibility="collapsed",
-            )
+            with head:
+                measure = st.segmented_control(
+                    "Medida", ["Passos", "Tempo ativo"], default="Passos",
+                    key="analyses-activity-measure", label_visibility="collapsed",
+                    width="content",
+                )
             if measure == "Tempo ativo":
                 charts.show(activity_chart(activity, "tempo_ativo_h", "h ativas"))
             else:
