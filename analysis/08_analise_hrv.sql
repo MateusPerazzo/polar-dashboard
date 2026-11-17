@@ -28,7 +28,7 @@
 -- que qualquer fator isolado. Também as duas noites com o HRV mais baixo
 -- (58 e 63) começaram num sábado.
 -- Mas é uma hipótese: os dados mostram quando o HRV caiu, não por quê, e
--- 5 semanas não bastam para saber se isso se repete. A partir de agora
+-- 6 semanas não bastam para saber se isso se repete. A partir de agora
 -- vou anotar os eventos fora da rotina, para ter com o que comparar.
 --
 -- OBSERVAÇÃO

@@ -35,9 +35,10 @@
 --     horário (entre -3,6 e -9,8). Nesses dias eu não tenho rotina: saio,
 --     durmo tarde e não tenho horário certo.
 --   - o grupo "tarde" mistura dois tipos de noite bem diferentes: 4 noites
---     de sábado com status 1 (o pior) e 8 noites de dias de semana com
---     status de 4 a 6. Por isso a mediana dele (4) engana: ela fica no
---     meio dos dois tipos e não representa nenhum deles.
+--     com status 1 (o pior), todas de sexta ou sábado (3 sábados e 1
+--     sexta), e 8 noites com status de 4 a 6 (as 5 dos dias de semana,
+--     2 sextas e 1 sábado). Por isso a mediana dele (4) engana: ela fica
+--     no meio dos dois tipos e não representa nenhum deles.
 --   - o grupo "cedo" tem 5 noites de quinta, quase todas com recuperação
 --     ruim.
 --
